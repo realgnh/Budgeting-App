@@ -70,7 +70,7 @@ export function generateDemoTransactions(now: Date = new Date(), liveRates: FxRa
       ...(notes ? { notes } : {}), timestampIso: when.toISOString(), fxSnapshot: snapshotAt(when, now, liveRates),
     });
   };
-  /** `days` after `base`, at h:m on the UTC+2 clock. */
+  /** `days` after `base`, at h:m in Cairo time. */
   const at = (base: Date, days: number, h: number, m: number) => { const p = zparts(base); return zdate(p.y, p.m, p.d + days, h, m); };
 
   for (let k = 13; k >= 0; k--) {

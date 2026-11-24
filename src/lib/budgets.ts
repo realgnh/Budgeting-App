@@ -12,9 +12,9 @@ export function budgetStatus(pctUsed: number): BudgetStatus {
 
 export const STATUS_LABEL: Record<BudgetStatus, string> = { ok: 'On track', warn: 'Approaching limit', over: 'Over budget' };
 
-/** Month key ("yyyy-MM") on the UTC+2 calendar. */
+/** Month key ("yyyy-MM") on the Cairo calendar. */
 export const monthKey = (d: Date): MonthKey => monthKeyZ(d);
-/** The instant a month starts (00:00 UTC+2 on the 1st). */
+/** The instant a month starts (00:00 Cairo time on the 1st). */
 export const monthFromKey = (k: MonthKey): Date => { const [y, m] = k.split('-').map(Number); return zdate(y, m - 1, 1); };
 
 export function currentMonthBounds(now: Date) {
@@ -22,7 +22,7 @@ export function currentMonthBounds(now: Date) {
   return { start, end: addZMonths(start, 1), days: daysInZMonthOf(now) };
 }
 
-/** Days remaining in the month on the UTC+2 calendar, counting today. */
+/** Days remaining in the month on the Cairo calendar, counting today. */
 export function remainingDaysInMonth(now: Date): number {
   return daysInZMonthOf(now) - zparts(now).d + 1;
 }

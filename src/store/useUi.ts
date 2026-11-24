@@ -20,7 +20,7 @@ interface UiStore {
   setBudgetMonth: (m: MonthKey) => void;
   balanceOpen: boolean;
   setBalanceOpen: (open: boolean) => void;
-  /** The day the dashboard is pinned to ("yyyy-MM-dd", UTC+2), or null to follow today and roll over at midnight. */
+  /** The day the dashboard is pinned to ("yyyy-MM-dd", Cairo time), or null to follow today and roll over at midnight. */
   periodAnchor: string | null;
   setPeriodAnchor: (k: string | null) => void;
 }

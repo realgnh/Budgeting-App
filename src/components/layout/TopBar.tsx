@@ -16,7 +16,7 @@ export function TopBar() {
   const tab = useUi((s) => s.tab);
   const openNew = useUi((s) => s.openNewTransaction);
   const { baseCurrency, setBaseCurrency, fx, fxLoading, refreshFx, theme, setTheme } = useFinanceStore();
-  const updated = fx.lastUpdatedIso ? `Last updated ${fmt.date(fx.lastUpdatedIso)}, ${fmt.time(fx.lastUpdatedIso)} UTC+2` : 'Not updated yet';
+  const updated = fx.lastUpdatedIso ? `Last updated ${fmt.date(fx.lastUpdatedIso)}, ${fmt.time(fx.lastUpdatedIso)} Cairo time` : 'Not updated yet';
 
   const onRefresh = async () => {
     const ok = await refreshFx();

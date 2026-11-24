@@ -14,7 +14,7 @@ npm run dev        # http://localhost:5173
 | `npm run dev` | Start the dev server |
 | `npm run build` | Type-check, then build to `dist/` |
 | `npm run preview` | Serve the production build |
-| `npm test` | Run the Vitest unit tests (FX, UTC+2 periods, budgets, balance corrections) |
+| `npm test` | Run the Vitest unit tests (FX, Cairo-time periods including clock changes, budgets, balance corrections) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run build:single` | Build a single self-contained HTML file to `dist-single/` |
 
@@ -32,7 +32,7 @@ Mizan targets desktop viewports of 1024px and wider.
   - A monthly burn-rate chart against an ideal pace line
 - **Transactions:** search over titles and notes, filters by type, category, currency and date range, live totals, sorting by date or converted amount, and inline edit and delete.
 - **Day / Month / Year:** choose how much time to show, then pick the exact day, month or year with the arrows, the date picker or the month and year lists. Day shows hourly bars, Month daily bars, Year monthly bars. Every tab follows the selection, including the transaction list.
-- **Resets daily on UTC+2:** all dates use a fixed UTC+2 clock (no daylight saving), whatever the device's time zone. Left on today, the view starts fresh at 00:00 UTC+2. Times are shown and entered in UTC+2, and CSV exports label their date columns that way.
+- **Resets daily on Cairo time:** all dates use Cairo time (Africa/Cairo: UTC+2, or UTC+3 during Egypt's summer daylight saving), whatever the device's time zone. Left on today, the view starts fresh at midnight in Cairo. Times are shown and entered in Cairo time, and CSV exports label their date columns that way. Days when the clocks change are 23 or 25 hours long, as in Cairo.
 - **Base currency:** switch between EGP, SAR and USD at any time. Every figure converts instantly.
 - **Settings & Data:**
   - Monthly budgets

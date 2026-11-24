@@ -1,11 +1,11 @@
 import type { PeriodUnit, Transaction } from '../types/finance';
 import {
-  DAY_MS, HOUR_MS, addZDays, addZMonths, dayKey, daysInZMonthOf, fmt, monthKeyZ, startOfZDay, startOfZMonth, startOfZYear, zdate, zparts,
+  addZDays, addZMonths, dayKey, daysInZMonthOf, fmt, monthKeyZ, startOfZDay, startOfZMonth, startOfZYear, zdate, zparts,
 } from './time';
 
 export type BucketUnit = 'hour' | 'day' | 'month';
 
-/** A selected stretch of the calendar: the day, month or year that contains `anchor` (UTC+2). */
+/** A selected stretch of the calendar: the day, month or year that contains `anchor` (Cairo time). */
 export interface Period { unit: PeriodUnit; anchor: Date }
 
 /** A half-open window [start, end). */
@@ -25,7 +25,11 @@ export function earliestTimestamp(transactions: Transaction[]): Date | null {
 /** Day → 24 hourly buckets; month → one bucket per day; year → 12 monthly buckets. */
 export function getWindow(p: Period): TimeWindow {
   switch (p.unit) {
-    case 'day': { const start = startOfZDay(p.anchor); return { start, end: addZDays(start, 1), unit: 'hour', count: 24 }; }
+    case 'day': {
+      // Ends at the next calendar midnight, so clock-change days are 23 or 25 hours long.
+      const a = zparts(p.anchor);
+      return { start: startOfZDay(p.anchor), end: zdate(a.y, a.m, a.d + 1), unit: 'hour', count: 24 };
+    }
     case 'month': { const start = startOfZMonth(p.anchor); return { start, end: addZMonths(start, 1), unit: 'day', count: daysInZMonthOf(start) }; }
     case 'year': { const start = startOfZYear(p.anchor); return { start, end: zdate(zparts(start).y + 1, 0, 1), unit: 'month', count: 12 }; }
   }
@@ -56,9 +60,11 @@ export function bucketLabel(d: Date, unit: BucketUnit): string {
 export function buildBuckets(w: TimeWindow): Bucket[] {
   const out: Bucket[] = [];
   for (let i = 0; i < w.count; i++) {
-    const start = w.unit === 'hour' ? new Date(+w.start + i * HOUR_MS) : w.unit === 'day' ? new Date(+w.start + i * DAY_MS) : addZMonths(w.start, i);
-    const end = w.unit === 'hour' ? new Date(+start + HOUR_MS) : w.unit === 'day' ? new Date(+start + DAY_MS) : addZMonths(start, 1);
-    out.push({ start, end, label: bucketLabel(start, w.unit) });
+    // Buckets follow the wall clock, so a clock-change day still has hours 00–23 and every bucket starts on the hour.
+    const s = zparts(w.start);
+    const at = (k: number) => (w.unit === 'hour' ? zdate(s.y, s.m, s.d, k) : w.unit === 'day' ? zdate(s.y, s.m, s.d + k) : zdate(s.y, s.m + k, 1));
+    const start = at(i), end = at(i + 1);
+    out.push({ start, end, label: w.unit === 'hour' ? `${String(i).padStart(2, '0')}:00` : bucketLabel(start, w.unit) });
   }
   return out;
 }

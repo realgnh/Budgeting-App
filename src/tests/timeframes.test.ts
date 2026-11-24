@@ -4,11 +4,11 @@ import { cashFlowSeries } from '../lib/analytics';
 import { dayKey, fmt, fromInputValue, toInputValue, zdate } from '../lib/time';
 import type { Transaction } from '../types/finance';
 
-// zdate(y, m, d, h, min) builds an instant from a UTC+2 wall-clock time, independent of the machine's zone.
-const now = zdate(2026, 10, 24, 15, 30); // Tue Nov 24 2026, 15:30 UTC+2
+// zdate(y, m, d, h, min) builds an instant from a Cairo wall-clock time, independent of the machine's zone.
+const now = zdate(2026, 10, 24, 15, 30); // Tue Nov 24 2026, 15:30 Cairo (UTC+2 in winter)
 const iso = (y: number, m: number, d: number, h = 0, min = 0) => zdate(y, m, d, h, min).toISOString();
 
-describe('UTC+2 clock', () => {
+describe('Cairo clock in winter (UTC+2)', () => {
   it('starts the day at 22:00 UTC the evening before', () => {
     expect(getWindow({ unit: 'day', anchor: now }).start.toISOString()).toBe('2026-11-23T22:00:00.000Z');
   });
@@ -27,6 +27,34 @@ describe('UTC+2 clock', () => {
   it('formats on the UTC+2 clock', () => {
     expect(fmt.dateTime('2026-11-24T22:30:00Z')).toBe('Nov 25, 2026 · 00:30');
     expect(fmt.dayLong(now)).toBe('Tuesday, November 24, 2026');
+  });
+});
+
+describe('Cairo clock with daylight saving (UTC+3 in summer)', () => {
+  const H = 3_600_000;
+  it('starts a summer day at 21:00 UTC the evening before', () => {
+    expect(getWindow({ unit: 'day', anchor: zdate(2026, 6, 1, 12) }).start.toISOString()).toBe('2026-06-30T21:00:00.000Z');
+    expect(toInputValue('2026-07-01T09:00:00Z')).toBe('2026-07-01T12:00');
+    expect(dayKey(new Date('2026-07-14T20:59:59Z'))).toBe('2026-07-14');
+    expect(dayKey(new Date('2026-07-14T21:00:00Z'))).toBe('2026-07-15');
+  });
+  it('gives the spring-forward day (last Friday of April) 23 hours', () => {
+    const w = getWindow({ unit: 'day', anchor: zdate(2026, 3, 24, 12) });
+    expect(+w.end - +w.start).toBe(23 * H);
+    const b = buildBuckets(w);
+    expect(b).toHaveLength(24);
+    expect(b[13].start.toISOString()).toBe('2026-04-24T10:00:00.000Z');
+    expect(bucketIndexFor('2026-04-24T10:30:00Z', b)).toBe(13);
+  });
+  it('gives the fall-back day (last Thursday of October) 25 hours', () => {
+    const w = getWindow({ unit: 'day', anchor: zdate(2026, 9, 29, 12) });
+    expect(+w.end - +w.start).toBe(25 * H);
+    expect(dayKey(new Date('2026-10-29T21:30:00Z'))).toBe('2026-10-29'); // the repeated 23:00 hour
+    expect(buildBuckets(getWindow({ unit: 'month', anchor: zdate(2026, 9, 5) }))).toHaveLength(31);
+  });
+  it('steps across clock changes by calendar day', () => {
+    expect(dayKey(shiftPeriod({ unit: 'day', anchor: zdate(2026, 3, 23, 23, 30) }, 1).anchor)).toBe('2026-04-24');
+    expect(dayKey(shiftPeriod({ unit: 'day', anchor: zdate(2026, 9, 30, 0, 30) }, -1).anchor)).toBe('2026-10-29');
   });
 });
 

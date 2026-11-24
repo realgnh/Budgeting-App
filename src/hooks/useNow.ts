@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Current time, refreshed every 30 seconds and right after each UTC+2 midnight, so "today" views
+ * Current time, refreshed every 30 seconds and whenever the tab becomes visible again, so "today" views
  * roll over on their own.
  */
 export function useNow(): Date {

@@ -2,7 +2,7 @@ export type Currency = 'EGP' | 'SAR' | 'USD';
 
 export type TransactionType = 'income' | 'expense';
 
-/** How much time the dashboard shows at once: one day, one month or one year (UTC+2 calendar). */
+/** How much time the dashboard shows at once: one day, one month or one year (Cairo calendar). */
 export type PeriodUnit = 'day' | 'month' | 'year';
 
 /** Exchange rates expressed as units of currency per 1 USD (USD is always 1). */

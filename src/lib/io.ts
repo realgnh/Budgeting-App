@@ -9,7 +9,7 @@ function csvCell(v: string | number): string {
 
 export function transactionsToCsv(transactions: Transaction[], categories: Category[], base: Currency): string {
   const byId = new Map(categories.map((c) => [c.id, c.name]));
-  const header = ['id', 'date_utc+2', 'time_utc+2', 'type', 'category', 'title', 'notes', 'native_amount', 'native_currency',
+  const header = ['id', 'date_cairo', 'time_cairo', 'type', 'category', 'title', 'notes', 'native_amount', 'native_currency',
     `amount_${base.toLowerCase()}`, 'fx_usd_egp', 'fx_usd_sar'];
   const rows = [...transactions]
     .sort((a, b) => a.timestampIso.localeCompare(b.timestampIso))

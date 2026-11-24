@@ -8,7 +8,7 @@ import { useNow } from './useNow';
 
 /**
  * The selected day / month / year, its transactions and the period before it. With no pinned date
- * it follows the current time, so the "today" view starts fresh at 00:00 UTC+2.
+ * it follows the current time, so the "today" view starts fresh at 00:00 Cairo time.
  */
 export function usePeriod() {
   const transactions = useFinanceStore((s) => s.transactions);

@@ -40,7 +40,7 @@ export function Sidebar() {
           <Row k="1 USD" v={`${formatNumber(fx.rates.EGP)} EGP`} />
           <Row k="1 USD" v={`${formatNumber(fx.rates.SAR)} SAR`} />
           <Row k="1 SAR" v={`${formatNumber(fx.rates.EGP / fx.rates.SAR)} EGP`} />
-          <div className="text-[11px] text-muted">{updated ? `Updated ${fmt.shortDateTime(updated)} UTC+2` : 'Using built-in default rates'}</div>
+          <div className="text-[11px] text-muted">{updated ? `Updated ${fmt.shortDateTime(updated)} Cairo time` : 'Using built-in default rates'}</div>
         </div>
         <button type="button" className="btn btn-ghost justify-start px-2.5 text-muted" onClick={() => openSettings('budgets')}><Settings2 size={16} strokeWidth={1.8} />Settings &amp; data</button>
       </div>

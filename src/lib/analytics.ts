@@ -92,7 +92,7 @@ export function currencyMix(transactions: Transaction[], base: Currency): Slice[
 export interface BurnPoint { day: number; label: string; actual: number | null; ideal: number | null }
 
 /**
- * Cumulative spend through a month (UTC+2) against an even pace to the cap. For the current month,
+ * Cumulative spend through a month (Cairo time) against an even pace to the cap. For the current month,
  * days after today have no actual value; past months are complete; future months are empty.
  */
 export function burnRateSeries(transactions: Transaction[], base: Currency, now: Date, limitInBase: number | null, month: Date = now): BurnPoint[] {
