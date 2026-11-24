@@ -29,20 +29,19 @@ export function SegmentedControl<T extends string>({ options, value, onChange, a
     return () => ro.disconnect();
   }, [value, options]);
 
-  const pad = size === 'sm' ? 'px-2.5 py-1 text-[12px]' : 'px-3 py-[5px] text-[12.5px]';
-  const thumbColor = tone === 'accent' ? 'bg-accent' : 'bg-fg';
-  const activeText = tone === 'accent' ? 'text-accent-ink' : 'text-bg';
+  const pad = size === 'sm' ? 'h-6 px-2.5 text-[12px]' : 'h-7 px-3 text-[12.5px]';
+  const activeText = tone === 'accent' ? 'text-accent' : 'text-fg';
   return (
-    <div ref={wrap} role="radiogroup" aria-label={ariaLabel} className="relative inline-flex gap-0.5 rounded-lg border border-line bg-surface p-0.5">
+    <div ref={wrap} role="radiogroup" aria-label={ariaLabel} className="relative inline-flex gap-0.5 rounded-[8px] bg-surface-2 p-0.5 ring-1 ring-inset ring-line">
       {thumb && (
-        <span aria-hidden className={`seg-thumb absolute left-0 top-0.5 bottom-0.5 rounded-md shadow-sm ${thumbColor}`}
+        <span aria-hidden className="seg-thumb absolute left-0 top-0.5 bottom-0.5 rounded-[6px] bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.08),0_0_0_1px_rgb(var(--line))]"
           style={{ transform: `translateX(${thumb.x}px)`, width: thumb.w }} />
       )}
       {options.map((o) => {
         const active = o.value === value;
         return (
           <button key={o.value} type="button" role="radio" aria-checked={active} data-value={o.value} onClick={() => onChange(o.value)}
-            className={`relative z-10 rounded-md font-semibold transition-colors duration-200 ${pad} ${active ? activeText : 'text-fg-2 hover:text-fg'}`}>
+            className={`relative z-10 rounded-[6px] font-medium transition-colors duration-300 ${pad} ${active ? activeText : 'text-muted hover:text-fg'}`}>
             {o.label}
           </button>
         );

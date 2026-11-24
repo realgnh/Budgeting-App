@@ -89,9 +89,9 @@ export function TransactionModal() {
           <label className="label-caps" htmlFor="tx-notes">Notes (optional)</label>
           <textarea id="tx-notes" className="input h-16 w-full resize-y py-2" maxLength={240} value={d.notes} onChange={(e) => upd({ notes: e.target.value })} />
         </div>
-        <div className="flex items-center justify-between rounded-xl border border-line bg-surface-2 px-3.5 py-2.5 text-[12.5px] text-fg-2">
+        <div className="flex items-center justify-between rounded-[8px] border border-line bg-surface-2 px-3.5 py-2.5 text-[12.5px] text-fg-2">
           <span>{d.currency === base ? 'Recorded in your base currency' : `≈ in ${base} at 1 ${d.currency} = ${formatNumber(convertCurrency(1, d.currency, base, rates), 4)} ${base}`}</span>
-          <b key={`${d.currency}-${base}`} className="anim-fade-up font-display text-[17px] text-fg">{formatMoney(preview, base)}</b>
+          <b className="figure text-[17px] text-fg">{formatMoney(preview, base)}</b>
         </div>
         {error && <div className="anim-fade-up rounded-lg bg-bad-soft px-3 py-2 text-[12.5px] font-semibold text-bad" role="alert">{error}</div>}
         <button type="submit" hidden />

@@ -2,86 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Pine-tinted neutrals; values are "r g b" so Tailwind can apply alpha. */
+/* Quiet, cool neutrals with one pine accent. Values are "r g b" so Tailwind can apply alpha. */
 :root {
-  --bg: 244 246 245; --surface: 255 255 255; --surface-2: 248 250 249; --line: 226 231 228; --line-strong: 205 213 209;
-  --fg: 17 22 20; --fg-2: 77 87 83; --muted: 128 140 135;
-  --accent: 31 107 87; --accent-ink: 255 255 255; --accent-soft: 227 240 235;
+  --bg: 246 247 246; --surface: 255 255 255; --surface-2: 243 245 244; --line: 228 232 230; --line-strong: 208 214 211;
+  --fg: 20 24 22; --fg-2: 82 90 87; --muted: 130 139 135;
+  --accent: 30 102 84; --accent-ink: 255 255 255; --accent-soft: 232 241 237;
   --income: 27 175 122; --expense: 235 104 52;
-  --good: 15 138 62; --good-soft: 226 244 232; --warn: 185 120 0; --warn-soft: 253 241 216; --bad: 208 59 59; --bad-soft: 251 229 229;
-  --grid: 233 236 234;
+  --good: 18 128 64; --good-soft: 230 244 235; --warn: 176 113 0; --warn-soft: 252 243 222; --bad: 200 55 55; --bad-soft: 251 233 233;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
   color-scheme: light;
 }
 .dark {
-  --bg: 14 18 17; --surface: 22 27 26; --surface-2: 27 33 32; --line: 38 46 43; --line-strong: 52 64 60;
-  --fg: 237 241 239; --fg-2: 181 190 186; --muted: 128 139 135;
-  --accent: 76 195 157; --accent-ink: 6 19 15; --accent-soft: 23 48 41;
+  --bg: 15 18 17; --surface: 22 26 25; --surface-2: 29 34 33; --line: 40 47 45; --line-strong: 56 65 62;
+  --fg: 236 240 238; --fg-2: 178 187 183; --muted: 125 135 131;
+  --accent: 92 196 160; --accent-ink: 8 20 16; --accent-soft: 26 45 39;
   --income: 25 158 112; --expense: 217 89 38;
-  --good: 47 191 106; --good-soft: 21 41 30; --warn: 240 180 60; --warn-soft: 45 37 18; --bad: 239 107 107; --bad-soft: 50 26 26;
-  --grid: 34 42 39;
+  --good: 72 196 122; --good-soft: 23 40 30; --warn: 232 176 64; --warn-soft: 44 37 20; --bad: 236 112 112; --bad-soft: 48 27 27;
   color-scheme: dark;
 }
 
-html, body, #root { height: 100%; }
+html, body, #root { min-height: 100%; }
 body {
   @apply bg-bg text-fg font-sans antialiased;
   font-size: 13.5px;
-  line-height: 1.45;
+  line-height: 1.5;
   font-variant-numeric: tabular-nums;
-  transition: background-color .35s ease, color .35s ease;
+  font-feature-settings: "ss01", "tnum";
 }
 :focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
+::selection { background: rgb(var(--accent) / .18); }
 
-/* Theme switches smoothly: surfaces and borders cross-fade. */
+/* Theme change: cross-fade the whole page when the browser supports view transitions. */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .35s; animation-timing-function: var(--ease-in-out); }
 .theme-anim *, .theme-anim *::before, .theme-anim *::after {
-  transition: background-color .35s ease, border-color .35s ease, color .35s ease, fill .35s ease, stroke .35s ease !important;
+  transition: background-color .3s var(--ease-in-out), border-color .3s var(--ease-in-out), color .3s var(--ease-in-out) !important;
 }
 
 @layer components {
-  .card { @apply rounded-xl border border-line bg-surface p-4 shadow-card min-w-0; }
-  .card-title { @apply font-display text-[14.5px] font-bold tracking-tight; }
-  .label-caps { @apply text-[11px] font-semibold uppercase tracking-[0.06em] text-muted; }
-  .btn { @apply inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[12.5px] font-semibold text-fg transition-all duration-150 hover:border-line-strong active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none; }
-  .btn-primary { @apply border-accent bg-accent text-accent-ink hover:brightness-110 hover:border-accent; }
-  .btn-ghost { @apply border-transparent bg-transparent text-fg-2 hover:bg-surface-2 hover:text-fg hover:border-transparent; }
-  .btn-danger { @apply text-bad hover:border-bad; }
-  .btn-icon { @apply h-8 w-8 justify-center p-0; }
-  .input { @apply h-8 min-w-0 rounded-lg border border-line bg-surface px-2.5 text-[13px] text-fg outline-none transition-shadow focus:border-transparent focus:ring-2 focus:ring-accent placeholder:text-muted; }
-  .pill { @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11.5px] font-bold; }
+  .card { @apply min-w-0 rounded-[10px] border border-line bg-surface p-5; }
+  .card-title { @apply text-[14px] font-semibold tracking-[-0.01em]; }
+  .label-caps { @apply text-[12px] font-medium text-muted; }
+  .figure { @apply font-semibold tracking-[-0.025em]; }
+  .btn { @apply inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-[7px] border border-line bg-surface px-3 text-[12.5px] font-medium text-fg transition-[background-color,border-color,color,transform] duration-200 hover:border-line-strong hover:bg-surface-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50; }
+  .btn-primary { @apply border-accent bg-accent text-accent-ink hover:border-accent hover:bg-accent hover:brightness-[1.08]; }
+  .btn-ghost { @apply border-transparent bg-transparent text-fg-2 hover:border-transparent hover:bg-surface-2 hover:text-fg; }
+  .btn-danger { @apply text-bad hover:border-bad/50; }
+  .btn-icon { @apply w-8 justify-center px-0; }
+  .btn-sm { @apply h-7 px-2.5 text-[12px]; }
+  .input { @apply h-8 min-w-0 rounded-[7px] border border-line bg-surface px-2.5 text-[13px] text-fg outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-muted focus:border-accent focus:ring-[3px] focus:ring-accent/15; }
+  .pill { @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11.5px] font-medium; }
+  .divide-cols > * + * { @apply border-l border-line; }
 }
 
-/* Motion */
-@keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* Motion: one easing family, short distances, no overshoot. */
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
-@keyframes pop-in { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
-@keyframes pop-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(6px) scale(.98); } }
-@keyframes slide-in { from { transform: translateX(100%); } to { transform: none; } }
-@keyframes slide-out { from { transform: none; } to { transform: translateX(100%); } }
-@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes pop-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(4px) scale(.99); } }
+@keyframes slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes slide-out { from { transform: none; opacity: 1; } to { transform: translateX(24px); opacity: 0; } }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes icon-swap { from { opacity: 0; transform: rotate(-90deg) scale(.5); } to { opacity: 1; transform: none; } }
+@keyframes icon-swap { from { opacity: 0; transform: rotate(-45deg) scale(.7); } to { opacity: 1; transform: none; } }
 
-.anim-stagger > * { animation: fade-up .45s cubic-bezier(.2,.7,.2,1) both; }
-.anim-stagger > *:nth-child(2) { animation-delay: .04s; }
-.anim-stagger > *:nth-child(3) { animation-delay: .08s; }
-.anim-stagger > *:nth-child(4) { animation-delay: .12s; }
-.anim-stagger > *:nth-child(5) { animation-delay: .16s; }
-.anim-stagger > *:nth-child(6) { animation-delay: .2s; }
-.anim-stagger > *:nth-child(n+7) { animation-delay: .24s; }
-.anim-fade-up { animation: fade-up .35s cubic-bezier(.2,.7,.2,1) both; }
-.anim-icon { animation: icon-swap .4s cubic-bezier(.2,.8,.2,1.2) both; }
-.anim-spin { animation: spin .8s linear infinite; }
-.scrim-in { animation: fade-in .2s ease both; }
-.scrim-out { animation: fade-out .18s ease both; }
-.modal-in { animation: pop-in .24s cubic-bezier(.2,.8,.2,1) both; }
-.modal-out { animation: pop-out .18s ease both; }
-.drawer-in { animation: slide-in .3s cubic-bezier(.2,.8,.2,1) both; }
-.drawer-out { animation: slide-out .22s ease both; }
-.toast-in { animation: toast-in .25s cubic-bezier(.2,.8,.2,1) both; }
-.bar-fill { transition: width .8s cubic-bezier(.2,.7,.2,1), background-color .3s ease; }
-.seg-thumb { transition: transform .32s cubic-bezier(.3,.9,.3,1.1), width .32s cubic-bezier(.3,.9,.3,1.1); }
+.anim-stagger > * { animation: rise .5s var(--ease-out) both; }
+.anim-stagger > *:nth-child(2) { animation-delay: 30ms; }
+.anim-stagger > *:nth-child(3) { animation-delay: 60ms; }
+.anim-stagger > *:nth-child(4) { animation-delay: 90ms; }
+.anim-stagger > *:nth-child(n+5) { animation-delay: 120ms; }
+.anim-fade-up { animation: rise .4s var(--ease-out) both; }
+.anim-fade { animation: fade-in .3s var(--ease-out) both; }
+.anim-icon { animation: icon-swap .45s var(--ease-out) both; }
+.anim-spin { animation: spin .9s linear infinite; }
+.scrim-in { animation: fade-in .25s var(--ease-out) both; }
+.scrim-out { animation: fade-out .2s var(--ease-in-out) both; }
+.modal-in { animation: pop-in .3s var(--ease-out) both; }
+.modal-out { animation: pop-out .18s var(--ease-in-out) both; }
+.drawer-in { animation: slide-in .35s var(--ease-out) both; }
+.drawer-out { animation: slide-out .22s var(--ease-in-out) both; }
+.toast-in { animation: toast-in .3s var(--ease-out) both; }
+.bar-fill { transition: width .7s var(--ease-out), background-color .3s var(--ease-in-out); }
+.seg-thumb { transition: transform .35s var(--ease-out), width .35s var(--ease-out); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
 }

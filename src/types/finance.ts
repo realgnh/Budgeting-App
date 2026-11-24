@@ -48,6 +48,21 @@ export interface BudgetConfig {
   categoryMonthlyLimits: Record<string, MoneyLimit>; // keyed by categoryId
 }
 
+/**
+ * A correction that makes the computed balance match the user's real balance. It moves the
+ * balance only: it never counts as income or expense.
+ */
+export interface BalanceAdjustment {
+  id: string;
+  amount: number; // Signed, in native currency
+  currency: Currency;
+  timestampIso: string;
+  fxSnapshot: FxRates;
+}
+
+/** Month key in the form "yyyy-MM". */
+export type MonthKey = string;
+
 export interface AppState {
   schemaVersion: number;
   baseCurrency: Currency;
@@ -55,9 +70,13 @@ export interface AppState {
   fx: FxCache;
   categories: Category[];
   transactions: Transaction[];
+  /** Fallback budget for months before any month-specific budget was saved. */
   budgets: BudgetConfig;
+  /** Budgets saved for a specific month; each applies until a later month has its own. */
+  monthlyBudgets: Record<MonthKey, BudgetConfig>;
+  balanceAdjustments: BalanceAdjustment[];
 }
 
 export const CURRENCIES: readonly Currency[] = ['EGP', 'SAR', 'USD'] as const;
 export const TIME_RANGES: readonly TimeRange[] = ['1D', '5D', '1M', '1Y', 'ALL'] as const;
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;

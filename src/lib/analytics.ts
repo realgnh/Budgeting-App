@@ -1,6 +1,6 @@
 import { addDays, format } from 'date-fns';
-import type { Category, Currency, Transaction } from '../types/finance';
-import { transactionToBase } from './fx';
+import type { BalanceAdjustment, Category, Currency, Transaction } from '../types/finance';
+import { convertCurrency, transactionToBase } from './fx';
 import { bucketIndexFor, buildBuckets, isInWindow, type TimeWindow } from './timeframes';
 import { currentMonthBounds } from './budgets';
 
@@ -13,6 +13,13 @@ export function sumTotals(transactions: Transaction[], base: Currency): Totals {
     if (t.type === 'income') income += v; else expense += v;
   }
   return { income, expense, net: income - expense, count: transactions.length };
+}
+
+export const adjustmentToBase = (a: BalanceAdjustment, base: Currency) => convertCurrency(a.amount, a.currency, base, a.fxSnapshot);
+
+/** All-time income − expenses, plus any balance corrections the user entered. */
+export function netBalance(transactions: Transaction[], adjustments: BalanceAdjustment[], base: Currency): number {
+  return sumTotals(transactions, base).net + adjustments.reduce((s, a) => s + adjustmentToBase(a, base), 0);
 }
 
 export function inWindow(transactions: Transaction[], w: Pick<TimeWindow, 'start' | 'end'>): Transaction[] {
@@ -32,8 +39,8 @@ export function savingsRate(income: number, expense: number): number | null {
 
 export interface SeriesPoint { label: string; start: Date; income: number; expense: number; net: number; balance: number }
 
-/** Income/expense per bucket plus the running all-time balance at each bucket's end. */
-export function cashFlowSeries(transactions: Transaction[], w: TimeWindow, base: Currency): SeriesPoint[] {
+/** Income/expense per bucket plus the running all-time balance (with corrections) at each bucket's end. */
+export function cashFlowSeries(transactions: Transaction[], w: TimeWindow, base: Currency, adjustments: BalanceAdjustment[] = []): SeriesPoint[] {
   const buckets = buildBuckets(w);
   const pts: SeriesPoint[] = buckets.map((b) => ({ label: b.label, start: b.start, income: 0, expense: 0, net: 0, balance: 0 }));
   let opening = 0;
@@ -44,8 +51,15 @@ export function cashFlowSeries(transactions: Transaction[], w: TimeWindow, base:
     if (i < 0) continue;
     if (v >= 0) pts[i].income += v; else pts[i].expense -= v;
   }
+  const adjByBucket = new Array<number>(pts.length).fill(0);
+  for (const adj of adjustments) {
+    const v = adjustmentToBase(adj, base);
+    if (Date.parse(adj.timestampIso) < w.start.getTime()) { opening += v; continue; }
+    const i = bucketIndexFor(adj.timestampIso, buckets);
+    if (i >= 0) adjByBucket[i] += v;
+  }
   let run = opening;
-  for (const p of pts) { p.net = p.income - p.expense; run += p.net; p.balance = run; }
+  pts.forEach((p, i) => { p.net = p.income - p.expense; run += p.net + adjByBucket[i]; p.balance = run; });
   return pts;
 }
 

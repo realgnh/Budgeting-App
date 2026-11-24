@@ -9,6 +9,7 @@ import { TransactionsTab } from './components/transactions/TransactionsTab';
 import { TransactionModal } from './components/transactions/TransactionModal';
 import { SettingsDrawer } from './components/settings/SettingsDrawer';
 import { ToastHost } from './components/common/Toast';
+import { BalanceModal } from './components/overview/BalanceModal';
 
 export default function App() {
   const theme = useFinanceStore((s) => s.theme);
@@ -29,7 +30,7 @@ export default function App() {
       const el = document.activeElement as HTMLElement | null;
       const typing = !!el && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable);
       const ui = useUi.getState();
-      if (typing || ui.editor.open || ui.settings.open) return;
+      if (typing || ui.editor.open || ui.settings.open || ui.balanceOpen) return;
       e.preventDefault();
       ui.openNewTransaction();
     };
@@ -40,15 +41,19 @@ export default function App() {
   return (
     <div className="grid min-h-full min-w-[1024px] grid-cols-[240px_minmax(0,1fr)]">
       <Sidebar />
-      <div className="flex min-w-0 flex-col">
+      <div className="flex min-h-screen min-w-0 flex-col">
         <TopBar />
-        <main key={tab} className="flex flex-col gap-4 px-6 pb-10 pt-5">
-          {tab === 'overview' && <OverviewTab />}
-          {tab === 'analytics' && <AnalyticsTab />}
-          {tab === 'transactions' && <TransactionsTab />}
+        {/* Content is capped and centered horizontally; the overview also centers vertically on tall screens. */}
+        <main key={tab} className="flex flex-1 flex-col px-8 py-8">
+          <div className={`mx-auto flex w-full max-w-[1400px] flex-col gap-5 ${tab === 'overview' ? 'my-auto' : ''}`}>
+            {tab === 'overview' && <OverviewTab />}
+            {tab === 'analytics' && <AnalyticsTab />}
+            {tab === 'transactions' && <TransactionsTab />}
+          </div>
         </main>
       </div>
       <TransactionModal />
+      <BalanceModal />
       <SettingsDrawer />
       <ToastHost />
     </div>

@@ -8,7 +8,7 @@ import { DataControls } from './DataControls';
 export function SettingsDrawer() {
   const { settings, closeSettings, openSettings } = useUi();
   return (
-    <Drawer open={settings.open} onClose={closeSettings} title="Settings & Data">
+    <Drawer open={settings.open} onClose={closeSettings} title="Settings & data">
       <SegmentedControl<SettingsSection> ariaLabel="Settings section" value={settings.section} onChange={(s) => openSettings(s)}
         options={[{ value: 'budgets', label: 'Budgets' }, { value: 'categories', label: 'Categories' }, { value: 'data', label: 'Data' }]} />
       <div key={settings.section} className="anim-fade-up flex flex-col gap-6">

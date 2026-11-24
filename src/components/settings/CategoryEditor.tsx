@@ -65,7 +65,7 @@ export function CategoryEditor() {
           const n = counts.get(c.id) ?? 0;
           const isDel = deleting?.id === c.id;
           return (
-            <li key={c.id} className={`anim-fade-up rounded-xl border px-3 py-2 transition-colors ${isDel ? 'border-bad bg-bad-soft' : editingId === c.id ? 'border-accent bg-accent-soft' : 'border-line'}`}>
+            <li key={c.id} className={`anim-fade-up rounded-[8px] border px-3 py-2 transition-colors ${isDel ? 'border-bad bg-bad-soft' : editingId === c.id ? 'border-accent bg-accent-soft' : 'border-line'}`}>
               <div className="flex items-center gap-3">
                 <span className="grid h-8 w-8 place-items-center rounded-[9px]" style={{ background: `${c.color}22`, color: c.color }}><CategoryIcon name={c.icon} size={15} /></span>
                 <span className="flex-1"><span className="font-semibold">{c.name}</span><span className="block text-[11.5px] text-muted">{n} {n === 1 ? 'transaction' : 'transactions'}{c.isDefault ? ' · built-in' : ' · custom'}</span></span>
@@ -93,7 +93,7 @@ export function CategoryEditor() {
         })}
       </ul>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface-2 p-4">
+      <div className="flex flex-col gap-3 rounded-[8px] border border-line bg-surface-2 p-4">
         <div className="flex items-center justify-between">
           <h4 className="label-caps">{editingId ? 'Edit category' : `New ${type} category`}</h4>
           {editingId && <button type="button" className="btn btn-ghost" onClick={resetDraft}>Cancel edit</button>}

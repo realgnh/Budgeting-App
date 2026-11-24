@@ -18,7 +18,7 @@ export function ToastHost() {
   const { msg, tone, key } = useToast();
   if (!msg) return null;
   return (
-    <div key={key} role="status" className="toast-in fixed bottom-5 left-1/2 z-[80] flex items-center gap-2 rounded-xl bg-fg px-4 py-2.5 text-[12.5px] font-semibold text-bg shadow-xl">
+    <div key={key} role="status" className="toast-in fixed bottom-5 left-1/2 z-[80] flex items-center gap-2 rounded-[9px] bg-fg px-3.5 py-2 text-[12.5px] font-medium text-bg shadow-pop">
       {tone === 'ok' ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}{msg}
     </div>
   );

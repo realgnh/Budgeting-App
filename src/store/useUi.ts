@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { Transaction } from '../types/finance';
+import type { MonthKey, Transaction } from '../types/finance';
+import { monthKey } from '../lib/budgets';
 
 export type Tab = 'overview' | 'analytics' | 'transactions';
 export type SettingsSection = 'budgets' | 'categories' | 'data';
@@ -14,6 +15,11 @@ interface UiStore {
   settings: { open: boolean; section: SettingsSection };
   openSettings: (section?: SettingsSection) => void;
   closeSettings: () => void;
+  /** Month shown in the budget panel and edited in Settings → Budgets. */
+  budgetMonth: MonthKey;
+  setBudgetMonth: (m: MonthKey) => void;
+  balanceOpen: boolean;
+  setBalanceOpen: (open: boolean) => void;
 }
 
 const readTab = (): Tab => {
@@ -31,4 +37,8 @@ export const useUi = create<UiStore>((set) => ({
   settings: { open: false, section: 'budgets' },
   openSettings: (section = 'budgets') => set({ settings: { open: true, section } }),
   closeSettings: () => set((s) => ({ settings: { ...s.settings, open: false } })),
+  budgetMonth: monthKey(new Date()),
+  setBudgetMonth: (budgetMonth) => set({ budgetMonth }),
+  balanceOpen: false,
+  setBalanceOpen: (balanceOpen) => set({ balanceOpen }),
 }));

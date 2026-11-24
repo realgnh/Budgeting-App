@@ -41,10 +41,10 @@ export function TransactionsTab() {
 
   if (!transactions.length) return <EmptyState />;
   return (
-    <div className="anim-stagger flex flex-col gap-4">
+    <div className="anim-stagger flex flex-col gap-5">
       <section className="card flex flex-col gap-3">
         <FilterBar value={filters} onChange={setFilters} categories={categories} />
-        <div className="grid grid-cols-4 overflow-hidden rounded-xl border border-line">
+        <div className="grid grid-cols-4 overflow-hidden rounded-[8px] border border-line">
           {[
             { l: 'Count', v: <AnimatedNumber value={totals.count} format={(v) => String(Math.round(v))} /> },
             { l: 'Income', v: <span className="text-good"><AnimatedNumber value={totals.income} format={money0} /></span> },
@@ -53,7 +53,7 @@ export function TransactionsTab() {
           ].map((x) => (
             <div key={x.l} className="border-r border-line bg-surface-2 px-4 py-2.5 last:border-r-0">
               <div className="label-caps">{x.l}</div>
-              <div className="font-display text-[17px] font-extrabold">{x.v}</div>
+              <div className="figure text-[18px]">{x.v}</div>
             </div>
           ))}
         </div>

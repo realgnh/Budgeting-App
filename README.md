@@ -22,7 +22,9 @@ Mizan targets desktop viewports of 1024px and wider.
 
 ## Features
 
-- **Overview:** net balance, period income and expenses with change-vs-previous-period badges, net cash flow and savings rate. Also the current month's budget health (overall cap, per-category bars, safe-to-spend per day), a cash-flow chart, a spending donut and recent transactions.
+- **Overview:** balance, period income and expenses with the change vs. the previous period, net cash flow and savings rate. Also a budget panel for any month (pick the month and year), a cash-flow chart, a spending donut and recent activity.
+- **Set balance:** type what you actually have and Mizan records the difference as a correction. Corrections change the balance but never count as income or spending, and you can remove them later.
+- **Monthly budgets:** each month can have its own cap and category limits. A saved budget carries forward to later months until one of them gets its own. Past months show the final result; the current month shows safe-to-spend per day.
 - **Analytics:**
   - A cash-flow graph that toggles between income-vs-expense bars and a running balance line
   - Period highlights
@@ -46,6 +48,7 @@ Mizan targets desktop viewports of 1024px and wider.
 - If the service can't be reached, Mizan keeps your last live rates. If it has never fetched live rates, it falls back to built-in defaults (1 USD = 50 EGP = 3.75 SAR) and shows an amber **Offline rates** pill.
 - Every transaction stores the rates from when it was created (`fxSnapshot`) and is always converted with them, so past totals never shift when today's rates move.
 - Budget limits are stored in the currency that was active when you saved them, and are converted to the current base currency using current rates.
+- Data saved by version 1 (before monthly budgets and balance corrections) is upgraded automatically, and version 1 backups can still be restored.
 
 ## Project layout
 

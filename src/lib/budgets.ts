@@ -1,5 +1,5 @@
-import { addMonths, differenceInCalendarDays, endOfMonth, startOfMonth } from 'date-fns';
-import type { BudgetConfig, Category, Currency, FxRates, Transaction } from '../types/finance';
+import { addMonths, differenceInCalendarDays, endOfMonth, format, isSameMonth, startOfMonth } from 'date-fns';
+import type { BudgetConfig, Category, Currency, FxRates, MonthKey, Transaction } from '../types/finance';
 import { limitToBase, transactionToBase } from './fx';
 
 export type BudgetStatus = 'ok' | 'warn' | 'over';
@@ -11,6 +11,9 @@ export function budgetStatus(pctUsed: number): BudgetStatus {
 }
 
 export const STATUS_LABEL: Record<BudgetStatus, string> = { ok: 'On track', warn: 'Approaching limit', over: 'Over budget' };
+
+export const monthKey = (d: Date): MonthKey => format(d, 'yyyy-MM');
+export const monthFromKey = (k: MonthKey): Date => { const [y, m] = k.split('-').map(Number); return new Date(y, m - 1, 1); };
 
 export function currentMonthBounds(now: Date) {
   const start = startOfMonth(now);
@@ -31,26 +34,36 @@ export function pctUsed(spent: number, limit: number): number {
   return (spent / limit) * 100;
 }
 
-export interface CategoryBudgetRow {
-  categoryId: string;
-  limit: number;
-  spent: number;
-  pct: number;
-  status: BudgetStatus;
+const EMPTY: BudgetConfig = { overallMonthlyLimit: null, categoryMonthlyLimits: {} };
+
+/**
+ * The budget in force for a month: that month's own budget, else the closest earlier month that has
+ * one, else the fallback. Returns which month it came from (null = fallback).
+ */
+export function resolveMonthBudget(month: MonthKey, monthly: Record<MonthKey, BudgetConfig>, fallback: BudgetConfig = EMPTY): { config: BudgetConfig; from: MonthKey | null } {
+  if (monthly[month]) return { config: monthly[month], from: month };
+  const earlier = Object.keys(monthly).filter((k) => k < month).sort();
+  const k = earlier[earlier.length - 1];
+  return k ? { config: monthly[k], from: k } : { config: fallback, from: null };
 }
+
+export interface CategoryBudgetRow { categoryId: string; limit: number; spent: number; pct: number; status: BudgetStatus }
+
+export type MonthPhase = 'past' | 'current' | 'future';
 
 export interface BudgetSummary {
   monthStart: Date;
+  phase: MonthPhase;
   spent: number;
   byCategory: Record<string, number>;
-  overall: { limit: number; pct: number; status: BudgetStatus; safePerDay: number; remaining: number } | null;
+  overall: { limit: number; pct: number; status: BudgetStatus; safePerDay: number | null; remaining: number } | null;
   categories: CategoryBudgetRow[];
   remainingDays: number;
   daysInMonth: number;
 }
 
-export function currentMonthExpenses(transactions: Transaction[], base: Currency, now: Date) {
-  const { start, end } = currentMonthBounds(now);
+export function monthExpenses(transactions: Transaction[], base: Currency, month: Date) {
+  const start = startOfMonth(month), end = addMonths(start, 1);
   const byCategory: Record<string, number> = {};
   let spent = 0;
   for (const t of transactions) {
@@ -64,16 +77,27 @@ export function currentMonthExpenses(transactions: Transaction[], base: Currency
   return { spent, byCategory };
 }
 
+/** Kept for callers that only care about the current month. */
+export const currentMonthExpenses = (transactions: Transaction[], base: Currency, now: Date) => monthExpenses(transactions, base, now);
+
+/**
+ * Budget progress for `month` (defaults to the month containing `now`). Safe-to-spend is only
+ * defined for the current month; past months have no days left and future months have not started.
+ */
 export function computeBudgetSummary(
-  transactions: Transaction[], budgets: BudgetConfig, categories: Category[], base: Currency, rates: FxRates, now: Date,
+  transactions: Transaction[], budgets: BudgetConfig, categories: Category[], base: Currency, rates: FxRates, now: Date, month: Date = now,
 ): BudgetSummary {
-  const { spent, byCategory } = currentMonthExpenses(transactions, base, now);
-  const remainingDays = remainingDaysInMonth(now);
+  const monthStart = startOfMonth(month);
+  const phase: MonthPhase = isSameMonth(monthStart, now) ? 'current' : monthStart < now ? 'past' : 'future';
+  const daysInMonth = endOfMonth(monthStart).getDate();
+  const remainingDays = phase === 'current' ? remainingDaysInMonth(now) : phase === 'future' ? daysInMonth : 0;
+  const { spent, byCategory } = monthExpenses(transactions, base, monthStart);
   let overall: BudgetSummary['overall'] = null;
   if (budgets.overallMonthlyLimit) {
     const limit = limitToBase(budgets.overallMonthlyLimit, base, rates);
     const pct = pctUsed(spent, limit);
-    overall = { limit, pct, status: budgetStatus(pct), safePerDay: safeToSpendPerDay(limit, spent, now), remaining: Math.max(0, limit - spent) };
+    const safePerDay = phase === 'past' ? null : Math.max(0, (limit - spent) / Math.max(1, remainingDays));
+    overall = { limit, pct, status: budgetStatus(pct), safePerDay, remaining: Math.max(0, limit - spent) };
   }
   const known = new Set(categories.map((c) => c.id));
   const rows: CategoryBudgetRow[] = Object.entries(budgets.categoryMonthlyLimits)
@@ -85,8 +109,5 @@ export function computeBudgetSummary(
       return { categoryId, limit, spent: s, pct, status: budgetStatus(pct) };
     })
     .sort((a, b) => b.pct - a.pct);
-  return {
-    monthStart: currentMonthBounds(now).start, spent, byCategory, overall, categories: rows, remainingDays,
-    daysInMonth: endOfMonth(now).getDate(),
-  };
+  return { monthStart, phase, spent, byCategory, overall, categories: rows, remainingDays, daysInMonth };
 }

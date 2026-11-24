@@ -13,10 +13,10 @@ export default {
         good: v('good'), 'good-soft': v('good-soft'), warn: v('warn'), 'warn-soft': v('warn-soft'), bad: v('bad'), 'bad-soft': v('bad-soft'),
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
-        display: ['Manrope', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['Geist', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        display: ['Geist', 'Inter', 'system-ui', 'sans-serif'],
       },
-      boxShadow: { card: '0 1px 2px rgb(17 22 20 / 0.04), 0 2px 8px rgb(17 22 20 / 0.04)' },
+      boxShadow: { card: '0 1px 2px rgb(17 22 20 / 0.05)', pop: '0 8px 30px rgb(17 22 20 / 0.12), 0 1px 3px rgb(17 22 20 / 0.08)' },
     },
   },
   plugins: [],

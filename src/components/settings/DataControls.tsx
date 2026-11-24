@@ -77,7 +77,7 @@ export function DataControls() {
 function Block({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2 border-b border-line pb-5 last:border-0">
-      <h4 className="font-display text-[14px] font-bold">{title}</h4>
+      <h4 className="text-[14px] font-semibold">{title}</h4>
       <p className="text-[12.5px] text-fg-2">{desc}</p>
       <div>{children}</div>
     </div>
@@ -86,7 +86,7 @@ function Block({ title, desc, children }: { title: string; desc: string; childre
 
 function Confirm({ text, yes, onYes, onNo, tone }: { text: string; yes: string; onYes: () => void; onNo: () => void; tone: 'bad' | 'warn' }) {
   return (
-    <div className={`anim-fade-up flex flex-col gap-2 rounded-xl border p-3 text-[12.5px] ${tone === 'bad' ? 'border-bad bg-bad-soft' : 'border-warn bg-warn-soft'}`}>
+    <div className={`anim-fade-up flex flex-col gap-2 rounded-[8px] border p-3 text-[12.5px] ${tone === 'bad' ? 'border-bad bg-bad-soft' : 'border-warn bg-warn-soft'}`}>
       <span className="font-semibold">{text}</span>
       <div className="flex gap-2"><button type="button" className={`btn ${tone === 'bad' ? 'btn-danger' : ''}`} onClick={onYes}>{yes}</button><button type="button" className="btn btn-ghost" onClick={onNo}>Cancel</button></div>
     </div>

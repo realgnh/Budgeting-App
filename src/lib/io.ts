@@ -39,8 +39,8 @@ export function parseBackup(text: string): AppState {
   try { raw = JSON.parse(text); } catch { throw new Error('This file is not valid JSON.'); }
   const state = isObj(raw) && isObj(raw.state) ? raw.state : raw;
   if (!isObj(state)) throw new Error('The file does not contain a Mizan backup.');
-  if (state.schemaVersion !== SCHEMA_VERSION) {
-    throw new Error(`Unsupported backup version ${String(state.schemaVersion)}. This app reads version ${SCHEMA_VERSION}.`);
+  if (state.schemaVersion !== 1 && state.schemaVersion !== SCHEMA_VERSION) {
+    throw new Error(`Unsupported backup version ${String(state.schemaVersion)}. This app reads versions 1 to ${SCHEMA_VERSION}.`);
   }
   if (!isCur(state.baseCurrency)) throw new Error('Backup has an invalid base currency.');
   if (!Array.isArray(state.categories) || !Array.isArray(state.transactions)) throw new Error('Backup is missing categories or transactions.');
@@ -59,15 +59,23 @@ export function parseBackup(text: string): AppState {
     }
     if (!catIds.has(t.categoryId)) throw new Error(`Transaction #${i + 1} points to a missing category.`);
   });
-  const b = state.budgets;
-  if (!isObj(b) || !(b.overallMonthlyLimit === null || isLimit(b.overallMonthlyLimit)) || !isObj(b.categoryMonthlyLimits)
-    || !Object.values(b.categoryMonthlyLimits).every(isLimit)) {
-    throw new Error('Backup has invalid budgets.');
+  const isBudget = (b: unknown) => isObj(b) && (b.overallMonthlyLimit === null || isLimit(b.overallMonthlyLimit)) && isObj(b.categoryMonthlyLimits)
+    && Object.values(b.categoryMonthlyLimits).every(isLimit);
+  if (!isBudget(state.budgets)) throw new Error('Backup has invalid budgets.');
+  const monthly = state.monthlyBudgets ?? {};
+  if (!isObj(monthly) || !Object.entries(monthly).every(([k, v]) => /^\d{4}-\d{2}$/.test(k) && isBudget(v))) throw new Error('Backup has invalid monthly budgets.');
+  const adjustments = state.balanceAdjustments ?? [];
+  if (!Array.isArray(adjustments) || !adjustments.every((a) => isObj(a) && typeof a.id === 'string' && typeof a.amount === 'number'
+    && Number.isFinite(a.amount) && isCur(a.currency) && typeof a.timestampIso === 'string' && !Number.isNaN(Date.parse(a.timestampIso)) && isRates(a.fxSnapshot))) {
+    throw new Error('Backup has invalid balance corrections.');
   }
   const fx = state.fx;
   if (!isObj(fx) || !isRates(fx.rates) || (fx.source !== 'live' && fx.source !== 'fallback')) throw new Error('Backup has invalid exchange rates.');
   const range = ['1D', '5D', '1M', '1Y', 'ALL'].includes(state.activeRange as string) ? state.activeRange : '1M';
-  return { ...(state as unknown as AppState), activeRange: range as AppState['activeRange'] };
+  return {
+    ...(state as unknown as AppState), schemaVersion: SCHEMA_VERSION, activeRange: range as AppState['activeRange'],
+    monthlyBudgets: monthly as AppState['monthlyBudgets'], balanceAdjustments: adjustments as AppState['balanceAdjustments'],
+  };
 }
 
 type SaveOutcome = 'saved' | 'declined' | 'failed';
