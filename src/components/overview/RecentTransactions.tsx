@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { fmt } from '../../lib/time';
 import { ArrowRight } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useUi } from '../../store/useUi';
@@ -19,7 +19,7 @@ export function RecentTransactions() {
       </div>
       <ul className="grid grid-cols-2 gap-x-8">
         {recent.map((t) => {
-          const c = byId.get(t.categoryId), d = new Date(t.timestampIso), inc = t.type === 'income';
+          const c = byId.get(t.categoryId), inc = t.type === 'income';
           return (
             <li key={t.id} className="border-t border-line first:border-t-0 [&:nth-child(2)]:border-t-0">
               <button type="button" onClick={() => openEditTransaction(t)}
@@ -27,7 +27,7 @@ export function RecentTransactions() {
                 <span style={{ color: c?.color }}><CategoryIcon name={c?.icon ?? ''} size={16} /></span>
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{t.title}</span>
-                  <span className="block truncate text-[12px] text-muted">{c?.name ?? 'Unknown'} · {format(d, 'MMM d, HH:mm')}</span>
+                  <span className="block truncate text-[12px] text-muted">{c?.name ?? 'Unknown'} · {fmt.shortDateTime(t.timestampIso)}</span>
                 </span>
                 <span className="text-right">
                   <span className={`block whitespace-nowrap font-medium ${inc ? 'text-good' : ''}`}>{inc ? '+' : '−'}{formatNumber(t.amount)} <span className="text-[11.5px] font-normal text-muted">{t.currency}</span></span>

@@ -20,6 +20,9 @@ interface UiStore {
   setBudgetMonth: (m: MonthKey) => void;
   balanceOpen: boolean;
   setBalanceOpen: (open: boolean) => void;
+  /** The day the dashboard is pinned to ("yyyy-MM-dd", UTC+2), or null to follow today and roll over at midnight. */
+  periodAnchor: string | null;
+  setPeriodAnchor: (k: string | null) => void;
 }
 
 const readTab = (): Tab => {
@@ -41,4 +44,6 @@ export const useUi = create<UiStore>((set) => ({
   setBudgetMonth: (budgetMonth) => set({ budgetMonth }),
   balanceOpen: false,
   setBalanceOpen: (balanceOpen) => set({ balanceOpen }),
+  periodAnchor: null,
+  setPeriodAnchor: (periodAnchor) => set({ periodAnchor }),
 }));

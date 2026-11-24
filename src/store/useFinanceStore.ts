@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import {
-  SCHEMA_VERSION, type AppState, type BudgetConfig, type Category, type Currency, type MonthKey, type MoneyLimit, type TimeRange,
+  SCHEMA_VERSION, type AppState, type BudgetConfig, type Category, type Currency, type MonthKey, type MoneyLimit, type PeriodUnit,
   type Transaction, type TransactionType,
 } from '../types/finance';
 import { netBalance } from '../lib/analytics';
@@ -21,7 +21,7 @@ interface UiState {
 
 interface Actions {
   setBaseCurrency: (c: Currency) => void;
-  setRange: (r: TimeRange) => void;
+  setPeriodUnit: (u: PeriodUnit) => void;
   setTheme: (t: Theme) => void;
   addTransaction: (t: NewTransaction) => Transaction;
   updateTransaction: (id: string, t: NewTransaction) => void;
@@ -61,7 +61,7 @@ export function initialAppState(): AppState {
   return {
     schemaVersion: SCHEMA_VERSION,
     baseCurrency: 'SAR',
-    activeRange: '1M',
+    periodUnit: 'day',
     fx: { rates: { ...FALLBACK_RATES }, lastUpdatedIso: '', source: 'fallback' },
     categories: DEFAULT_CATEGORIES.map((c) => ({ ...c })),
     transactions: [],
@@ -73,9 +73,17 @@ export function initialAppState(): AppState {
 
 /** Brings data saved by older versions up to the current schema. */
 export function migrateState(persisted: unknown, version: number): Partial<AppState> {
-  const s = (persisted ?? {}) as Partial<AppState>;
-  if (version < 2) return { ...s, schemaVersion: SCHEMA_VERSION, monthlyBudgets: s.monthlyBudgets ?? {}, balanceAdjustments: s.balanceAdjustments ?? [] };
-  return s;
+  const s = { ...((persisted ?? {}) as Partial<AppState> & { activeRange?: string }) };
+  if (version < 2) { s.monthlyBudgets = s.monthlyBudgets ?? {}; s.balanceAdjustments = s.balanceAdjustments ?? []; }
+  if (version < 3) { s.periodUnit = unitFromLegacyRange(s.activeRange); delete s.activeRange; }
+  return { ...s, schemaVersion: SCHEMA_VERSION };
+}
+
+/** Maps the old 1D/5D/1M/1Y/ALL setting to the closest Day/Month/Year view. */
+export function unitFromLegacyRange(r: unknown): PeriodUnit {
+  if (r === '1Y') return 'year';
+  if (r === '1M' || r === 'ALL') return 'month';
+  return 'day';
 }
 
 const sortTx = (list: Transaction[]) => [...list].sort((a, b) => b.timestampIso.localeCompare(a.timestampIso));
@@ -90,7 +98,7 @@ export const useFinanceStore = create<FinanceStore>()(
       fxError: null,
 
       setBaseCurrency: (baseCurrency) => set({ baseCurrency }),
-      setRange: (activeRange) => set({ activeRange }),
+      setPeriodUnit: (periodUnit) => set({ periodUnit }),
       setTheme: (theme) => set({ theme }),
 
       addTransaction: (t) => {
@@ -188,7 +196,7 @@ export const useFinanceStore = create<FinanceStore>()(
       migrate: (persisted, version) => migrateState(persisted, version) as FinanceStore,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({
-        schemaVersion: s.schemaVersion, baseCurrency: s.baseCurrency, activeRange: s.activeRange, fx: s.fx,
+        schemaVersion: s.schemaVersion, baseCurrency: s.baseCurrency, periodUnit: s.periodUnit, fx: s.fx,
         categories: s.categories, transactions: s.transactions, budgets: s.budgets, theme: s.theme,
         monthlyBudgets: s.monthlyBudgets, balanceAdjustments: s.balanceAdjustments,
       }),
@@ -197,7 +205,7 @@ export const useFinanceStore = create<FinanceStore>()(
 );
 
 export const selectAppState = (s: FinanceStore): AppState => ({
-  schemaVersion: s.schemaVersion, baseCurrency: s.baseCurrency, activeRange: s.activeRange, fx: s.fx,
+  schemaVersion: s.schemaVersion, baseCurrency: s.baseCurrency, periodUnit: s.periodUnit, fx: s.fx,
   categories: s.categories, transactions: s.transactions, budgets: s.budgets,
   monthlyBudgets: s.monthlyBudgets, balanceAdjustments: s.balanceAdjustments,
 });

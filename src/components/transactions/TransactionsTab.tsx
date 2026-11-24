@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { addDays, parseISO, startOfDay } from 'date-fns';
+import { usePeriod } from '../../hooks/usePeriod';
+import { periodTitle } from '../../lib/timeframes';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useUi } from '../../store/useUi';
 import { transactionToBase } from '../../lib/fx';
@@ -17,23 +18,21 @@ export function TransactionsTab() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<SortState>({ key: 'date', dir: 'desc' });
 
+  const { current, period } = usePeriod();
+  const title = periodTitle(period);
   const rows = useMemo(() => {
     const q = filters.q.trim().toLowerCase();
-    const from = filters.from ? startOfDay(parseISO(filters.from)).getTime() : -Infinity;
-    const to = filters.to ? addDays(startOfDay(parseISO(filters.to)), 1).getTime() : Infinity;
-    const list = transactions.filter((t) => {
+    const list = current.filter((t) => {
       if (filters.type !== 'all' && t.type !== filters.type) return false;
       if (filters.cat !== 'all' && t.categoryId !== filters.cat) return false;
       if (filters.cur !== 'all' && t.currency !== filters.cur) return false;
-      const ts = Date.parse(t.timestampIso);
-      if (ts < from || ts >= to) return false;
       return !q || t.title.toLowerCase().includes(q) || (t.notes ?? '').toLowerCase().includes(q);
     });
     const dir = sort.dir === 'asc' ? 1 : -1;
     return list.sort((a, b) => sort.key === 'date'
       ? dir * a.timestampIso.localeCompare(b.timestampIso)
       : dir * (transactionToBase(a, base) - transactionToBase(b, base)));
-  }, [transactions, filters, sort, base]);
+  }, [current, filters, sort, base]);
 
   const totals = useMemo(() => sumTotals(rows, base), [rows, base]);
   const onSort = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'desc' }));
@@ -43,6 +42,7 @@ export function TransactionsTab() {
   return (
     <div className="anim-stagger flex flex-col gap-5">
       <section className="card flex flex-col gap-3">
+        <div className="flex items-baseline justify-between"><h2 className="card-title">{title}</h2><span className="text-[12px] text-muted">{current.length} {current.length === 1 ? 'transaction' : 'transactions'} in this {period.unit}</span></div>
         <FilterBar value={filters} onChange={setFilters} categories={categories} />
         <div className="grid grid-cols-4 overflow-hidden rounded-[8px] border border-line">
           {[
@@ -60,7 +60,8 @@ export function TransactionsTab() {
       </section>
       <section className="card px-2 py-1">
         <LedgerTable rows={rows} categories={categories} base={base} sort={sort} onSort={onSort} onEdit={openEdit}
-          onDelete={(t) => { deleteTransaction(t.id); toast(`Deleted “${t.title}”`); }} />
+          onDelete={(t) => { deleteTransaction(t.id); toast(`Deleted “${t.title}”`); }}
+          emptyLabel={current.length ? 'No transactions match these filters.' : `No transactions on ${title}. Pick another ${period.unit} above, or add one.`} />
       </section>
     </div>
   );

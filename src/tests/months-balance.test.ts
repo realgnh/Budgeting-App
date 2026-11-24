@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { zdate } from '../lib/time';
 import { computeBudgetSummary, monthKey, resolveMonthBudget } from '../lib/budgets';
 import { cashFlowSeries, netBalance } from '../lib/analytics';
 import { getWindow } from '../lib/timeframes';
@@ -26,15 +27,15 @@ describe('per-month budgets', () => {
     expect(resolveMonthBudget('2026-01', monthly, fallback)).toEqual({ config: fallback, from: null });
   });
   it('formats month keys', () => {
-    expect(monthKey(new Date(2026, 0, 31))).toBe('2026-01');
+    expect(monthKey(zdate(2026, 0, 31))).toBe('2026-01');
   });
 });
 
 describe('budget summary for other months', () => {
-  const now = new Date(2026, 10, 24, 12);
-  const txs = [tx('oct', 450, new Date(2026, 9, 5)), tx('nov', 100, new Date(2026, 10, 3))];
+  const now = zdate(2026, 10, 24, 12);
+  const txs = [tx('oct', 450, zdate(2026, 9, 5)), tx('nov', 100, zdate(2026, 10, 3))];
   it('reports a closed month without safe-to-spend', () => {
-    const s = computeBudgetSummary(txs, cap(400), cats, 'USD', rates, now, new Date(2026, 9, 1));
+    const s = computeBudgetSummary(txs, cap(400), cats, 'USD', rates, now, zdate(2026, 9, 1));
     expect(s.phase).toBe('past');
     expect(s.spent).toBe(450);
     expect(s.overall!.status).toBe('over');
@@ -42,7 +43,7 @@ describe('budget summary for other months', () => {
     expect(s.remainingDays).toBe(0);
   });
   it('gives a full-month daily allowance for an upcoming month', () => {
-    const s = computeBudgetSummary(txs, cap(310), cats, 'USD', rates, now, new Date(2026, 11, 1));
+    const s = computeBudgetSummary(txs, cap(310), cats, 'USD', rates, now, zdate(2026, 11, 1));
     expect(s.phase).toBe('future');
     expect(s.spent).toBe(0);
     expect(s.overall!.safePerDay).toBeCloseTo(10);
@@ -56,14 +57,14 @@ describe('budget summary for other months', () => {
 
 describe('balance corrections', () => {
   const adj = (amount: number, d: Date, currency: 'USD' | 'EGP' = 'USD'): BalanceAdjustment => ({ id: `a${amount}`, amount, currency, timestampIso: d.toISOString(), fxSnapshot: rates });
-  const txs = [tx('pay', 1000, new Date(2026, 10, 1), 'income'), tx('rent', 400, new Date(2026, 10, 2))];
+  const txs = [tx('pay', 1000, zdate(2026, 10, 1), 'income'), tx('rent', 400, zdate(2026, 10, 2))];
   it('adds corrections to the balance without touching income or expenses', () => {
     expect(netBalance(txs, [], 'USD')).toBe(600);
-    expect(netBalance(txs, [adj(250, new Date(2026, 10, 3)), adj(-5000, new Date(2026, 10, 4), 'EGP')], 'USD')).toBeCloseTo(750);
+    expect(netBalance(txs, [adj(250, zdate(2026, 10, 3)), adj(-5000, zdate(2026, 10, 4), 'EGP')], 'USD')).toBeCloseTo(750);
   });
   it('shows corrections in the running balance at the right time', () => {
-    const now = new Date(2026, 10, 24, 12);
-    const s = cashFlowSeries(txs, getWindow('1M', now), 'USD', [adj(100, new Date(2026, 9, 1)), adj(50, new Date(2026, 10, 20, 9))]);
+    const now = zdate(2026, 10, 24, 12);
+    const s = cashFlowSeries(txs, getWindow({ unit: 'month', anchor: now }), 'USD', [adj(100, zdate(2026, 9, 1)), adj(50, zdate(2026, 10, 20, 9))]);
     const nov19 = s.find((p) => p.label === 'Nov 19')!, nov20 = s.find((p) => p.label === 'Nov 20')!;
     expect(nov19.balance).toBe(700);
     expect(nov20.balance).toBe(750);
@@ -75,10 +76,12 @@ describe('backups', () => {
   it('loads a version 1 backup and fills in the new fields', () => {
     const v1 = {
       schemaVersion: 1, baseCurrency: 'SAR', activeRange: '1M', fx: { rates, lastUpdatedIso: '', source: 'fallback' },
-      categories: cats, transactions: [tx('a', 5, new Date(2026, 1, 1))], budgets: { overallMonthlyLimit: null, categoryMonthlyLimits: {} },
+      categories: cats, transactions: [tx('a', 5, zdate(2026, 1, 1))], budgets: { overallMonthlyLimit: null, categoryMonthlyLimits: {} },
     };
     const s = parseBackup(JSON.stringify({ app: 'mizan', state: v1 }));
-    expect(s.schemaVersion).toBe(2);
+    expect(s.schemaVersion).toBe(3);
+    expect(s.periodUnit).toBe('month');
+    expect('activeRange' in s).toBe(false);
     expect(s.monthlyBudgets).toEqual({});
     expect(s.balanceAdjustments).toEqual([]);
   });
@@ -86,5 +89,16 @@ describe('backups', () => {
     const bad = { schemaVersion: 2, baseCurrency: 'SAR', fx: { rates, lastUpdatedIso: '', source: 'live' }, categories: cats, transactions: [],
       budgets: { overallMonthlyLimit: null, categoryMonthlyLimits: {} }, monthlyBudgets: { november: cap(5) }, balanceAdjustments: [] };
     expect(() => parseBackup(JSON.stringify(bad))).toThrow(/monthly budgets/);
+  });
+});
+
+describe('stored data from older versions', () => {
+  it('maps the old 1D–ALL setting to a day, month or year view', async () => {
+    const { migrateState } = await import('../store/useFinanceStore');
+    expect(migrateState({ activeRange: '1Y' }, 2).periodUnit).toBe('year');
+    expect(migrateState({ activeRange: '5D' }, 2).periodUnit).toBe('day');
+    const v1 = migrateState({ activeRange: 'ALL' }, 1);
+    expect(v1).toMatchObject({ periodUnit: 'month', schemaVersion: 3, monthlyBudgets: {}, balanceAdjustments: [] });
+    expect('activeRange' in v1).toBe(false);
   });
 });

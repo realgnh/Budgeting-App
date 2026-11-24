@@ -1,4 +1,4 @@
-import { addDays, addMonths, startOfDay, startOfMonth } from 'date-fns';
+import { addZMonths, startOfZDay, startOfZMonth, zdate, zparts } from './time';
 import type { BudgetConfig, Category, Currency, FxRates, Transaction, TransactionType } from '../types/finance';
 
 /** Swatches tuned to read on both light and dark surfaces (colorblind-checked order). */
@@ -70,26 +70,27 @@ export function generateDemoTransactions(now: Date = new Date(), liveRates: FxRa
       ...(notes ? { notes } : {}), timestampIso: when.toISOString(), fxSnapshot: snapshotAt(when, now, liveRates),
     });
   };
-  const at = (day: Date, h: number, m: number) => { const d = new Date(day); d.setHours(h, m, 0, 0); return d; };
+  /** `days` after `base`, at h:m on the UTC+2 clock. */
+  const at = (base: Date, days: number, h: number, m: number) => { const p = zparts(base); return zdate(p.y, p.m, p.d + days, h, m); };
 
   for (let k = 13; k >= 0; k--) {
-    const m0 = addMonths(startOfMonth(now), -k);
-    add('income', 'salary', 14500, 'SAR', 'Monthly salary', at(m0, 9, 5), 'Payroll · Riyadh office');
-    add('expense', 'housing', 3800, 'SAR', 'Apartment rent', at(addDays(m0, 1), 10, 30));
-    add('expense', 'housing', 280 + r() * 120, 'SAR', 'Electricity & water', at(addDays(m0, 9), 18, 12));
-    add('expense', 'subscriptions', 15.99, 'USD', 'Netflix Premium', at(addDays(m0, 4), 3, 0));
-    add('expense', 'subscriptions', 20, 'USD', 'Cloud storage plan', at(addDays(m0, 6), 3, 0));
-    add('expense', 'groceries', 380 + r() * 260, 'SAR', 'Danube supermarket', at(addDays(m0, 7), 19, 40));
-    add('expense', 'groceries', 260 + r() * 200, 'SAR', 'Panda hypermarket', at(addDays(m0, 20), 20, 5));
-    if (k % 2 === 0) add('income', 'freelance', 450 + r() * 700, 'USD', 'Upwork · dashboard project', at(addDays(m0, 14), 16, 20), 'Milestone payout');
-    if (k % 3 === 1) add('expense', 'shopping', 6500 + r() * 6000, 'EGP', 'City Stars · clothing', at(addDays(m0, 17), 17, 45), 'Visit to Cairo');
-    if (k % 3 === 1) add('expense', 'food', 1800 + r() * 1400, 'EGP', 'Zooba & Sachi dinners', at(addDays(m0, 18), 21, 30));
-    if (k % 4 === 2) add('income', 'investments', 120 + r() * 160, 'USD', 'Dividend · VT ETF', at(addDays(m0, 24), 12, 0));
-    if (k % 5 === 0) add('expense', 'health', 300 + r() * 500, 'SAR', 'Dr. Sulaiman Al Habib clinic', at(addDays(m0, 12), 11, 15));
-    if (k % 4 === 3) add('income', 'allowance', 5000, 'EGP', 'Family allowance', at(addDays(m0, 11), 13, 0));
+    const m0 = addZMonths(startOfZMonth(now), -k);
+    add('income', 'salary', 14500, 'SAR', 'Monthly salary', at(m0, 0, 9, 5), 'Payroll · Riyadh office');
+    add('expense', 'housing', 3800, 'SAR', 'Apartment rent', at(m0, 1, 10, 30));
+    add('expense', 'housing', 280 + r() * 120, 'SAR', 'Electricity & water', at(m0, 9, 18, 12));
+    add('expense', 'subscriptions', 15.99, 'USD', 'Netflix Premium', at(m0, 4, 3, 0));
+    add('expense', 'subscriptions', 20, 'USD', 'Cloud storage plan', at(m0, 6, 3, 0));
+    add('expense', 'groceries', 380 + r() * 260, 'SAR', 'Danube supermarket', at(m0, 7, 19, 40));
+    add('expense', 'groceries', 260 + r() * 200, 'SAR', 'Panda hypermarket', at(m0, 20, 20, 5));
+    if (k % 2 === 0) add('income', 'freelance', 450 + r() * 700, 'USD', 'Upwork · dashboard project', at(m0, 14, 16, 20), 'Milestone payout');
+    if (k % 3 === 1) add('expense', 'shopping', 6500 + r() * 6000, 'EGP', 'City Stars · clothing', at(m0, 17, 17, 45), 'Visit to Cairo');
+    if (k % 3 === 1) add('expense', 'food', 1800 + r() * 1400, 'EGP', 'Zooba & Sachi dinners', at(m0, 18, 21, 30));
+    if (k % 4 === 2) add('income', 'investments', 120 + r() * 160, 'USD', 'Dividend · VT ETF', at(m0, 24, 12, 0));
+    if (k % 5 === 0) add('expense', 'health', 300 + r() * 500, 'SAR', 'Dr. Sulaiman Al Habib clinic', at(m0, 12, 11, 15));
+    if (k % 4 === 3) add('income', 'allowance', 5000, 'EGP', 'Family allowance', at(m0, 11, 13, 0));
   }
 
-  const today = startOfDay(now);
+  const today = startOfZDay(now);
   const recent: [number, TransactionType, string, number, Currency, string, number, number][] = [
     [-27, 'expense', 'transport', 85, 'SAR', 'Careem rides', 8, 40],
     [-24, 'expense', 'entertainment', 45, 'USD', 'Steam game', 22, 10],
@@ -106,7 +107,7 @@ export function generateDemoTransactions(now: Date = new Date(), liveRates: FxRa
     [-1, 'expense', 'groceries', 210, 'SAR', 'Tamimi Markets', 19, 5],
     [-1, 'expense', 'entertainment', 2400, 'EGP', 'Concert tickets (Cairo)', 22, 40],
   ];
-  for (const [d, type, cat, amt, cur, title, h, m] of recent) add(type, cat, amt, cur, title, at(addDays(today, d), h, m));
+  for (const [d, type, cat, amt, cur, title, h, m] of recent) add(type, cat, amt, cur, title, at(today, d, h, m));
 
   // Today: spread across the hours that have already passed so the 1D chart always has data.
   const minutesToday = Math.max(1, Math.floor((now.getTime() - today.getTime()) / 60000));

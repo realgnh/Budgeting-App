@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { zdate } from '../lib/time';
 import { budgetStatus, computeBudgetSummary, remainingDaysInMonth, safeToSpendPerDay } from '../lib/budgets';
 import type { BudgetConfig, Category, FxRates, Transaction } from '../types/finance';
 
 const rates: FxRates = { USD: 1, EGP: 50, SAR: 3.75 };
-const now = new Date(2026, 10, 24, 10); // Nov 24 → 7 days left incl. today
+const now = zdate(2026, 10, 24, 10); // Nov 24 → 7 days left incl. today
 
 describe('budget status thresholds', () => {
   it('is green below 75%', () => {
@@ -23,8 +24,8 @@ describe('budget status thresholds', () => {
 describe('safe to spend', () => {
   it('counts today as a remaining day', () => {
     expect(remainingDaysInMonth(now)).toBe(7);
-    expect(remainingDaysInMonth(new Date(2026, 10, 30, 23))).toBe(1);
-    expect(remainingDaysInMonth(new Date(2026, 1, 1))).toBe(28);
+    expect(remainingDaysInMonth(zdate(2026, 10, 30, 23))).toBe(1);
+    expect(remainingDaysInMonth(zdate(2026, 1, 1))).toBe(28);
   });
   it('divides what is left by the remaining days', () => {
     expect(safeToSpendPerDay(1000, 300, now)).toBeCloseTo(100);
@@ -43,10 +44,10 @@ describe('computeBudgetSummary', () => {
     id, type, amount, currency: cur, categoryId: cat, title: id, timestampIso: d.toISOString(), fxSnapshot: rates,
   });
   const txs = [
-    tx('a', 'food', 750, 'SAR', new Date(2026, 10, 2)), // 200 USD
-    tx('b', 'rent', 500, 'USD', new Date(2026, 10, 1, 0, 0)),
-    tx('c', 'food', 999, 'USD', new Date(2026, 9, 31, 23, 59)), // previous month: excluded
-    tx('d', 'food', 5000, 'EGP', new Date(2026, 10, 20), 'income'), // income: excluded
+    tx('a', 'food', 750, 'SAR', zdate(2026, 10, 2)), // 200 USD
+    tx('b', 'rent', 500, 'USD', zdate(2026, 10, 1, 0, 0)),
+    tx('c', 'food', 999, 'USD', zdate(2026, 9, 31, 23, 59)), // previous month: excluded
+    tx('d', 'food', 5000, 'EGP', zdate(2026, 10, 20), 'income'), // income: excluded
   ];
   const budgets: BudgetConfig = {
     overallMonthlyLimit: { amount: 3750, currency: 'SAR' }, // 1000 USD

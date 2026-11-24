@@ -1,6 +1,6 @@
-import { format } from 'date-fns';
 import { CURRENCIES, SCHEMA_VERSION, type AppState, type Category, type Currency, type Transaction } from '../types/finance';
 import { transactionToBase } from './fx';
+import { dayKey, fmt } from './time';
 
 function csvCell(v: string | number): string {
   const s = String(v);
@@ -9,13 +9,12 @@ function csvCell(v: string | number): string {
 
 export function transactionsToCsv(transactions: Transaction[], categories: Category[], base: Currency): string {
   const byId = new Map(categories.map((c) => [c.id, c.name]));
-  const header = ['id', 'date', 'time', 'type', 'category', 'title', 'notes', 'native_amount', 'native_currency',
+  const header = ['id', 'date_utc+2', 'time_utc+2', 'type', 'category', 'title', 'notes', 'native_amount', 'native_currency',
     `amount_${base.toLowerCase()}`, 'fx_usd_egp', 'fx_usd_sar'];
   const rows = [...transactions]
     .sort((a, b) => a.timestampIso.localeCompare(b.timestampIso))
     .map((t) => {
-      const d = new Date(t.timestampIso);
-      return [t.id, format(d, 'yyyy-MM-dd'), format(d, 'HH:mm'), t.type, byId.get(t.categoryId) ?? t.categoryId, t.title, t.notes ?? '',
+      return [t.id, dayKey(t.timestampIso), fmt.time(t.timestampIso), t.type, byId.get(t.categoryId) ?? t.categoryId, t.title, t.notes ?? '',
         t.amount.toFixed(2), t.currency, transactionToBase(t, base).toFixed(2), t.fxSnapshot.EGP, t.fxSnapshot.SAR].map(csvCell).join(',');
     });
   return [header.join(','), ...rows].join('\r\n');
@@ -39,7 +38,7 @@ export function parseBackup(text: string): AppState {
   try { raw = JSON.parse(text); } catch { throw new Error('This file is not valid JSON.'); }
   const state = isObj(raw) && isObj(raw.state) ? raw.state : raw;
   if (!isObj(state)) throw new Error('The file does not contain a Mizan backup.');
-  if (state.schemaVersion !== 1 && state.schemaVersion !== SCHEMA_VERSION) {
+  if (typeof state.schemaVersion !== 'number' || state.schemaVersion < 1 || state.schemaVersion > SCHEMA_VERSION) {
     throw new Error(`Unsupported backup version ${String(state.schemaVersion)}. This app reads versions 1 to ${SCHEMA_VERSION}.`);
   }
   if (!isCur(state.baseCurrency)) throw new Error('Backup has an invalid base currency.');
@@ -71,9 +70,11 @@ export function parseBackup(text: string): AppState {
   }
   const fx = state.fx;
   if (!isObj(fx) || !isRates(fx.rates) || (fx.source !== 'live' && fx.source !== 'fallback')) throw new Error('Backup has invalid exchange rates.');
-  const range = ['1D', '5D', '1M', '1Y', 'ALL'].includes(state.activeRange as string) ? state.activeRange : '1M';
+  const unit: AppState['periodUnit'] = state.periodUnit === 'day' || state.periodUnit === 'month' || state.periodUnit === 'year'
+    ? state.periodUnit : state.activeRange === '1Y' ? 'year' : state.activeRange === '1M' || state.activeRange === 'ALL' ? 'month' : 'day';
+  const { activeRange: _legacy, ...rest } = state;
   return {
-    ...(state as unknown as AppState), schemaVersion: SCHEMA_VERSION, activeRange: range as AppState['activeRange'],
+    ...(rest as unknown as AppState), schemaVersion: SCHEMA_VERSION, periodUnit: unit,
     monthlyBudgets: monthly as AppState['monthlyBudgets'], balanceAdjustments: adjustments as AppState['balanceAdjustments'],
   };
 }

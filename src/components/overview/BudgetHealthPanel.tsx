@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { fmt, zparts } from '../../lib/time';
 import { SlidersHorizontal } from 'lucide-react';
 import { useMemo } from 'react';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -23,15 +23,15 @@ export function BudgetHealthPanel() {
   const byId = new Map(categories.map((c) => [c.id, c]));
   const m0 = (v: number) => formatMoney(v, base, 0);
   const hasAny = !!s.overall || s.categories.length > 0;
-  const inherited = from && from !== budgetMonth ? format(monthFromKey(from), 'MMMM yyyy') : null;
+  const inherited = from && from !== budgetMonth ? fmt.monthYear(monthFromKey(from)) : null;
 
   return (
     <section className="card">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col">
-          <h2 className="card-title">{format(month, 'MMMM yyyy')} budget</h2>
+          <h2 className="card-title">{fmt.monthYear(month)} budget</h2>
           <span className="text-[12px] text-muted">
-            {s.phase === 'past' ? 'Closed month' : s.phase === 'future' ? 'Upcoming month' : `Day ${now.getDate()} of ${s.daysInMonth}`}
+            {s.phase === 'past' ? 'Closed month' : s.phase === 'future' ? 'Upcoming month' : `Day ${zparts(now).d} of ${s.daysInMonth}`}
             {inherited ? ` · using the budget set in ${inherited}` : ''}
           </span>
         </div>
@@ -43,7 +43,7 @@ export function BudgetHealthPanel() {
 
       {!hasAny && (
         <div className="flex items-center justify-between gap-3 rounded-[8px] bg-surface-2 px-4 py-3 text-fg-2">
-          <span>No budget for {format(month, 'MMMM')}. Set a monthly cap or category limits to track spending against a plan.</span>
+          <span>No budget for {fmt.month(month)}. Set a monthly cap or category limits to track spending against a plan.</span>
           <button type="button" className="btn btn-primary" onClick={() => openSettings('budgets')}>Set budget</button>
         </div>
       )}

@@ -1,8 +1,7 @@
-import { addDays, format } from 'date-fns';
 import type { BalanceAdjustment, Category, Currency, Transaction } from '../types/finance';
 import { convertCurrency, transactionToBase } from './fx';
 import { bucketIndexFor, buildBuckets, isInWindow, type TimeWindow } from './timeframes';
-import { currentMonthBounds } from './budgets';
+import { addZDays, daysInZMonthOf, fmt, startOfZMonth, zparts } from './time';
 
 export interface Totals { income: number; expense: number; net: number; count: number }
 
@@ -92,23 +91,30 @@ export function currencyMix(transactions: Transaction[], base: Currency): Slice[
 
 export interface BurnPoint { day: number; label: string; actual: number | null; ideal: number | null }
 
-export function burnRateSeries(transactions: Transaction[], base: Currency, now: Date, limitInBase: number | null): BurnPoint[] {
-  const { start, last } = currentMonthBounds(now);
-  const days = last.getDate();
+/**
+ * Cumulative spend through a month (UTC+2) against an even pace to the cap. For the current month,
+ * days after today have no actual value; past months are complete; future months are empty.
+ */
+export function burnRateSeries(transactions: Transaction[], base: Currency, now: Date, limitInBase: number | null, month: Date = now): BurnPoint[] {
+  const start = startOfZMonth(month);
+  const sp = zparts(start), np = zparts(now);
+  const days = daysInZMonthOf(start);
   const daily = new Array<number>(days).fill(0);
   for (const t of transactions) {
     if (t.type !== 'expense') continue;
-    const d = new Date(t.timestampIso);
-    if (d.getFullYear() !== start.getFullYear() || d.getMonth() !== start.getMonth()) continue;
-    daily[d.getDate() - 1] += transactionToBase(t, base);
+    const p = zparts(t.timestampIso);
+    if (p.y !== sp.y || p.m !== sp.m) continue;
+    daily[p.d - 1] += transactionToBase(t, base);
   }
+  const monthIdx = (y: number, m: number) => y * 12 + m;
+  const lastDay = monthIdx(sp.y, sp.m) < monthIdx(np.y, np.m) ? days : monthIdx(sp.y, sp.m) > monthIdx(np.y, np.m) ? 0 : np.d;
   let run = 0;
   return daily.map((v, i) => {
     run += v;
     return {
       day: i + 1,
-      label: format(addDays(start, i), 'MMM d'),
-      actual: i + 1 <= now.getDate() ? run : null,
+      label: fmt.dayShort(addZDays(start, i)),
+      actual: i + 1 <= lastDay ? run : null,
       ideal: limitInBase ? (limitInBase * (i + 1)) / days : null,
     };
   });

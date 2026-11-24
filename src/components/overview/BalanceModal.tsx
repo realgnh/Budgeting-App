@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { fmt } from '../../lib/time';
 import { Trash2 } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useUi } from '../../store/useUi';
@@ -64,7 +64,7 @@ export function BalanceModal() {
           <ul className="divide-y divide-line rounded-[8px] border border-line">
             {recent.map((a) => (
               <li key={a.id} className="flex items-center justify-between gap-3 px-3 py-2 text-[12.5px]">
-                <span className="text-fg-2">{format(new Date(a.timestampIso), 'MMM d, yyyy · HH:mm')}</span>
+                <span className="text-fg-2">{fmt.dateTime(a.timestampIso)}</span>
                 <span className="ml-auto font-medium">{a.amount > 0 ? '+' : ''}{formatMoney(a.amount, a.currency)}
                   {a.currency !== baseCurrency && <span className="ml-1.5 text-muted">≈ {formatMoney(adjustmentToBase(a, baseCurrency), baseCurrency, 0)}</span>}
                 </span>

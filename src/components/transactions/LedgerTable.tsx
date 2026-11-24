@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { fmt } from '../../lib/time';
 import { ArrowDown, ArrowUp, Pencil, Trash2 } from 'lucide-react';
 import type { Category, Currency, Transaction } from '../../types/finance';
 import { transactionToBase } from '../../lib/fx';
@@ -52,11 +52,11 @@ export function LedgerTable({ rows, categories, base, sort, onSort, onEdit, onDe
         </thead>
         <tbody>
           {rows.map((t) => {
-            const d = new Date(t.timestampIso), inc = t.type === 'income', c = byId.get(t.categoryId);
+            const inc = t.type === 'income', c = byId.get(t.categoryId);
             const sign = inc ? '+' : '−';
             return (
               <tr key={t.id} className="group border-b border-line transition-colors last:border-0 hover:bg-surface-2">
-                <td className="whitespace-nowrap px-3 py-2.5 text-fg-2">{format(d, 'MMM d, yyyy')}<span className="block text-[11.5px] text-muted">{format(d, 'HH:mm')}</span></td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-fg-2">{fmt.date(t.timestampIso)}<span className="block text-[11.5px] text-muted">{fmt.time(t.timestampIso)}</span></td>
                 <td className="px-3 py-2.5"><div className="font-semibold">{t.title}</div>{t.notes && <div className="text-[12px] text-muted">{t.notes}</div>}</td>
                 <td className="px-3 py-2.5">{c ? <CategoryBadge name={c.name} color={c.color} /> : <span className="text-muted">Unknown</span>}</td>
                 <td className={`whitespace-nowrap px-3 py-2.5 text-right font-semibold ${inc ? 'text-good' : ''}`}>{sign}{formatNumber(t.amount)}<span className="ml-1 text-[10.5px] font-bold tracking-wide text-muted">{t.currency}</span></td>

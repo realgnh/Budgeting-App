@@ -1,24 +1,22 @@
-import { format } from 'date-fns';
 import { flushSync } from 'react-dom';
 import { Moon, Plus, RefreshCw, Sun, WifiOff } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useUi } from '../../store/useUi';
 import { SegmentedControl } from '../common/SegmentedControl';
 import { toast } from '../common/Toast';
-import { CURRENCIES, type Currency, type TimeRange } from '../../types/finance';
+import { CURRENCIES, type Currency } from '../../types/finance';
+import { fmt } from '../../lib/time';
+import { PeriodPicker } from './PeriodPicker';
 import { formatNumber } from '../../lib/format';
 
-const RANGE_OPTS: { value: TimeRange; label: string }[] = [
-  { value: '1D', label: '1D' }, { value: '5D', label: '5D' }, { value: '1M', label: '1M' }, { value: '1Y', label: '1Y' }, { value: 'ALL', label: 'ALL TIME' },
-];
 const CUR_OPTS = CURRENCIES.map((c) => ({ value: c, label: c }));
 const TITLES = { overview: 'Overview', analytics: 'Analytics', transactions: 'Transactions' } as const;
 
 export function TopBar() {
   const tab = useUi((s) => s.tab);
   const openNew = useUi((s) => s.openNewTransaction);
-  const { activeRange, setRange, baseCurrency, setBaseCurrency, fx, fxLoading, refreshFx, theme, setTheme } = useFinanceStore();
-  const updated = fx.lastUpdatedIso ? `Last updated ${format(new Date(fx.lastUpdatedIso), 'MMM d, yyyy HH:mm')}` : 'Not updated yet';
+  const { baseCurrency, setBaseCurrency, fx, fxLoading, refreshFx, theme, setTheme } = useFinanceStore();
+  const updated = fx.lastUpdatedIso ? `Last updated ${fmt.date(fx.lastUpdatedIso)}, ${fmt.time(fx.lastUpdatedIso)} UTC+2` : 'Not updated yet';
 
   const onRefresh = async () => {
     const ok = await refreshFx();
@@ -49,7 +47,7 @@ export function TopBar() {
           <WifiOff size={12} />Offline rates
         </span>
       )}
-      {tab !== 'transactions' && <SegmentedControl ariaLabel="Timeframe" options={RANGE_OPTS} value={activeRange} onChange={setRange} />}
+      <PeriodPicker />
       <SegmentedControl<Currency> ariaLabel="Base currency" options={CUR_OPTS} value={baseCurrency} onChange={setBaseCurrency} tone="accent" />
       <button type="button" className="btn btn-icon group relative" onClick={onRefresh} aria-label={`Refresh rates. ${updated}`} disabled={fxLoading}>
         <RefreshCw size={15} className={fxLoading ? 'anim-spin' : 'transition-transform duration-700 ease-out group-hover:rotate-180'} />

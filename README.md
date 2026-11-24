@@ -14,7 +14,7 @@ npm run dev        # http://localhost:5173
 | `npm run dev` | Start the dev server |
 | `npm run build` | Type-check, then build to `dist/` |
 | `npm run preview` | Serve the production build |
-| `npm test` | Run the Vitest unit tests (FX, timeframes, budgets) |
+| `npm test` | Run the Vitest unit tests (FX, UTC+2 periods, budgets, balance corrections) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run build:single` | Build a single self-contained HTML file to `dist-single/` |
 
@@ -31,7 +31,8 @@ Mizan targets desktop viewports of 1024px and wider.
   - Donuts for expenses by category (click a slice to see its transactions), income by source and currency mix
   - A monthly burn-rate chart against an ideal pace line
 - **Transactions:** search over titles and notes, filters by type, category, currency and date range, live totals, sorting by date or converted amount, and inline edit and delete.
-- **Timeframes:** 1D (hourly), 5D, 1M (daily), 1Y (monthly), and ALL TIME (daily, monthly or quarterly depending on the span).
+- **Day / Month / Year:** choose how much time to show, then pick the exact day, month or year with the arrows, the date picker or the month and year lists. Day shows hourly bars, Month daily bars, Year monthly bars. Every tab follows the selection, including the transaction list.
+- **Resets daily on UTC+2:** all dates use a fixed UTC+2 clock (no daylight saving), whatever the device's time zone. Left on today, the view starts fresh at 00:00 UTC+2. Times are shown and entered in UTC+2, and CSV exports label their date columns that way.
 - **Base currency:** switch between EGP, SAR and USD at any time. Every figure converts instantly.
 - **Settings & Data:**
   - Monthly budgets
@@ -48,7 +49,7 @@ Mizan targets desktop viewports of 1024px and wider.
 - If the service can't be reached, Mizan keeps your last live rates. If it has never fetched live rates, it falls back to built-in defaults (1 USD = 50 EGP = 3.75 SAR) and shows an amber **Offline rates** pill.
 - Every transaction stores the rates from when it was created (`fxSnapshot`) and is always converted with them, so past totals never shift when today's rates move.
 - Budget limits are stored in the currency that was active when you saved them, and are converted to the current base currency using current rates.
-- Data saved by version 1 (before monthly budgets and balance corrections) is upgraded automatically, and version 1 backups can still be restored.
+- Data saved by older versions is upgraded automatically (the old 1D/5D/1M/1Y/ALL setting becomes Day, Month or Year), and older backups can still be restored.
 
 ## Project layout
 

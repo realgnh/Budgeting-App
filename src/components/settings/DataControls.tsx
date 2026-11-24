@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { format } from 'date-fns';
+import { dayKey } from '../../lib/time';
 import { Database, Download, FileSpreadsheet, Trash2, Upload } from 'lucide-react';
 import { selectAppState, useFinanceStore } from '../../store/useFinanceStore';
 import { buildBackup, parseBackup, saveTextFile, transactionsToCsv } from '../../lib/io';
@@ -11,7 +11,7 @@ export function DataControls() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmDemo, setConfirmDemo] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
-  const stamp = format(new Date(), 'yyyy-MM-dd');
+  const stamp = dayKey(new Date());
   const n = store.transactions.length;
 
   const report = (outcome: Awaited<ReturnType<typeof saveTextFile>>, okMsg: string) => {

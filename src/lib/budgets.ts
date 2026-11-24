@@ -1,4 +1,4 @@
-import { addMonths, differenceInCalendarDays, endOfMonth, format, isSameMonth, startOfMonth } from 'date-fns';
+import { addZMonths, daysInZMonthOf, monthKeyZ, startOfZMonth, zdate, zparts } from './time';
 import type { BudgetConfig, Category, Currency, FxRates, MonthKey, Transaction } from '../types/finance';
 import { limitToBase, transactionToBase } from './fx';
 
@@ -12,17 +12,19 @@ export function budgetStatus(pctUsed: number): BudgetStatus {
 
 export const STATUS_LABEL: Record<BudgetStatus, string> = { ok: 'On track', warn: 'Approaching limit', over: 'Over budget' };
 
-export const monthKey = (d: Date): MonthKey => format(d, 'yyyy-MM');
-export const monthFromKey = (k: MonthKey): Date => { const [y, m] = k.split('-').map(Number); return new Date(y, m - 1, 1); };
+/** Month key ("yyyy-MM") on the UTC+2 calendar. */
+export const monthKey = (d: Date): MonthKey => monthKeyZ(d);
+/** The instant a month starts (00:00 UTC+2 on the 1st). */
+export const monthFromKey = (k: MonthKey): Date => { const [y, m] = k.split('-').map(Number); return zdate(y, m - 1, 1); };
 
 export function currentMonthBounds(now: Date) {
-  const start = startOfMonth(now);
-  return { start, end: addMonths(start, 1), last: endOfMonth(now) };
+  const start = startOfZMonth(now);
+  return { start, end: addZMonths(start, 1), days: daysInZMonthOf(now) };
 }
 
-/** Days remaining in the month, counting today. */
+/** Days remaining in the month on the UTC+2 calendar, counting today. */
 export function remainingDaysInMonth(now: Date): number {
-  return differenceInCalendarDays(endOfMonth(now), now) + 1;
+  return daysInZMonthOf(now) - zparts(now).d + 1;
 }
 
 export function safeToSpendPerDay(limitInBase: number, spentInBase: number, now: Date): number {
@@ -63,7 +65,7 @@ export interface BudgetSummary {
 }
 
 export function monthExpenses(transactions: Transaction[], base: Currency, month: Date) {
-  const start = startOfMonth(month), end = addMonths(start, 1);
+  const start = startOfZMonth(month), end = addZMonths(start, 1);
   const byCategory: Record<string, number> = {};
   let spent = 0;
   for (const t of transactions) {
@@ -87,9 +89,9 @@ export const currentMonthExpenses = (transactions: Transaction[], base: Currency
 export function computeBudgetSummary(
   transactions: Transaction[], budgets: BudgetConfig, categories: Category[], base: Currency, rates: FxRates, now: Date, month: Date = now,
 ): BudgetSummary {
-  const monthStart = startOfMonth(month);
-  const phase: MonthPhase = isSameMonth(monthStart, now) ? 'current' : monthStart < now ? 'past' : 'future';
-  const daysInMonth = endOfMonth(monthStart).getDate();
+  const monthStart = startOfZMonth(month);
+  const phase: MonthPhase = monthKeyZ(monthStart) === monthKeyZ(now) ? 'current' : monthStart < now ? 'past' : 'future';
+  const daysInMonth = daysInZMonthOf(monthStart);
   const remainingDays = phase === 'current' ? remainingDaysInMonth(now) : phase === 'future' ? daysInMonth : 0;
   const { spent, byCategory } = monthExpenses(transactions, base, monthStart);
   let overall: BudgetSummary['overall'] = null;

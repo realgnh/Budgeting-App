@@ -7,10 +7,11 @@ import { CHART_ANIM, chartTheme } from '../../lib/chartTheme';
 import { prefersReducedMotion } from '../../lib/motion';
 import { TooltipCard, type TipRow } from './ChartTooltip';
 
-export function BurnRateChart({ data, base, today }: { data: BurnPoint[]; base: Currency; today: number }) {
+export function BurnRateChart({ data, base }: { data: BurnPoint[]; base: Currency }) {
   const ct = chartTheme(useFinanceStore((s) => s.theme));
   const anim = !prefersReducedMotion();
-  const todayPt = data[today - 1];
+  // Marks the latest day with spending data (today, or the month's last day for past months).
+  const todayPt = [...data].reverse().find((p) => p.actual !== null);
   return (
     <div style={{ height: 260 }}>
       <ResponsiveContainer width="100%" height="100%">

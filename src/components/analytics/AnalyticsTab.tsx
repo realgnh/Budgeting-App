@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
 import { X } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useUi } from '../../store/useUi';
@@ -8,7 +7,8 @@ import { breakdownByCategory, burnRateSeries, cashFlowSeries, currencyMix, perio
 import { limitToBase } from '../../lib/fx';
 import { monthKey, resolveMonthBudget } from '../../lib/budgets';
 import { formatMoney, formatPct } from '../../lib/format';
-import { RANGE_LABEL } from '../../lib/timeframes';
+import { periodTitle } from '../../lib/timeframes';
+import { fmt } from '../../lib/time';
 import { SegmentedControl } from '../common/SegmentedControl';
 import { EmptyState } from '../common/EmptyState';
 import { toast } from '../common/Toast';
@@ -18,12 +18,13 @@ import { DonutChart } from './DonutChart';
 import { LedgerTable } from '../transactions/LedgerTable';
 import { Legend } from '../overview/OverviewTab';
 
-const UNIT_LABEL = { hour: 'hourly', day: 'daily', month: 'monthly', quarter: 'quarterly' } as const;
+const UNIT_LABEL = { hour: 'by hour', day: 'by day', month: 'by month' } as const;
 
 export function AnalyticsTab() {
   const { transactions, categories, baseCurrency: base, budgets, monthlyBudgets, balanceAdjustments, fx, deleteTransaction } = useFinanceStore();
   const openEdit = useUi((s) => s.openEditTransaction);
-  const { range, window, current, now } = usePeriod();
+  const { period, window, current, now } = usePeriod();
+  const title = periodTitle(period);
   const [view, setView] = useState<'bars' | 'balance'>('bars');
   const [selCat, setSelCat] = useState<string | null>(null);
 
@@ -34,20 +35,22 @@ export function AnalyticsTab() {
   const incSlices = useMemo(() => breakdownByCategory(incomes, categories, base), [incomes, categories, base]);
   const curSlices = useMemo(() => currencyMix(current, base), [current, base]);
   const hl = useMemo(() => periodHighlights(expenses, categories, base, window, now), [expenses, categories, base, window, now]);
-  const monthBudget = resolveMonthBudget(monthKey(now), monthlyBudgets, budgets).config;
+  // The burn-rate chart shows the month containing the selected period.
+  const burnMonth = period.anchor;
+  const monthBudget = resolveMonthBudget(monthKey(burnMonth), monthlyBudgets, budgets).config;
   const cap = monthBudget.overallMonthlyLimit ? limitToBase(monthBudget.overallMonthlyLimit, base, fx.rates) : null;
-  const burn = useMemo(() => burnRateSeries(transactions, base, now, cap), [transactions, base, now, cap]);
+  const burn = useMemo(() => burnRateSeries(transactions, base, now, cap, burnMonth), [transactions, base, now, cap, burnMonth]);
   const activeSel = selCat && expSlices.some((s) => s.key === selCat) ? selCat : null;
   const drill = activeSel ? expenses.filter((t) => t.categoryId === activeSel) : [];
   const selName = categories.find((c) => c.id === activeSel);
 
   if (!transactions.length) return <EmptyState />;
-  const label = RANGE_LABEL[range].toLowerCase();
+  const label = `on ${title}`;
   return (
     <div className="anim-stagger flex flex-col gap-5">
       <section className="card">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-baseline gap-3"><h2 className="card-title">Cash-flow graph</h2><span className="text-[12px] text-muted">{RANGE_LABEL[range]} · {UNIT_LABEL[window.unit]} buckets</span></div>
+          <div className="flex items-baseline gap-3"><h2 className="card-title">Cash-flow graph</h2><span className="text-[12px] text-muted">{title} · {UNIT_LABEL[window.unit]}</span></div>
           <div className="flex items-center gap-4">
             {view === 'bars' ? <Legend items={[['Income', 'bg-income'], ['Expenses', 'bg-expense']]} /> : <Legend items={[['Running balance', 'bg-accent']]} />}
             <SegmentedControl ariaLabel="Chart view" size="sm" value={view} onChange={setView}
@@ -59,25 +62,25 @@ export function AnalyticsTab() {
 
       <section className="card grid grid-cols-3 p-0 divide-cols">
         <Highlight label="Largest expense" value={hl.largest ? formatMoney(hl.largestValue, base) : '—'}
-          sub={hl.largest ? `${hl.largest.title} · ${format(new Date(hl.largest.timestampIso), 'MMM d')}` : `No expenses · ${label}`} />
+          sub={hl.largest ? `${hl.largest.title} · ${fmt.shortDateTime(hl.largest.timestampIso)}` : `No expenses ${label}`} />
         <Highlight label="Top spending category" value={hl.topCategory?.name ?? '—'}
-          sub={hl.topCategory ? `${formatMoney(hl.topCategory.value, base, 0)} · ${formatPct(hl.topCategory.share * 100)} of spend` : `No expenses · ${label}`} />
-        <Highlight label="Average daily spend" value={formatMoney(hl.avgDaily, base, 0)}
-          sub={`across ${hl.days} ${hl.days === 1 ? 'day' : 'days'}`} />
+          sub={hl.topCategory ? `${formatMoney(hl.topCategory.value, base, 0)} · ${formatPct(hl.topCategory.share * 100)} of spend` : `No expenses ${label}`} />
+        <Highlight label={period.unit === 'day' ? 'Spent this day' : 'Average daily spend'} value={formatMoney(hl.avgDaily, base, 0)}
+          sub={period.unit === 'day' ? `${current.filter((t) => t.type === 'expense').length} expenses` : `across ${hl.days} ${hl.days === 1 ? 'day' : 'days'}`} />
       </section>
 
       <div className="grid grid-cols-3 gap-5">
         <section className="card">
           <div className="mb-3 flex items-center justify-between"><h2 className="card-title">Expenses by category</h2><span className="text-[12px] text-muted">Select a slice</span></div>
-          <DonutChart slices={expSlices} base={base} totalLabel="Spent" emptyLabel={`No expenses · ${label}`} selectedKey={activeSel} onSelect={setSelCat} />
+          <DonutChart slices={expSlices} base={base} totalLabel="Spent" emptyLabel={`No expenses ${label}`} selectedKey={activeSel} onSelect={setSelCat} />
         </section>
         <section className="card">
           <div className="mb-3 flex items-center justify-between"><h2 className="card-title">Income by source</h2></div>
-          <DonutChart slices={incSlices} base={base} totalLabel="Earned" emptyLabel={`No income · ${label}`} />
+          <DonutChart slices={incSlices} base={base} totalLabel="Earned" emptyLabel={`No income ${label}`} />
         </section>
         <section className="card">
           <div className="mb-3 flex items-center justify-between"><h2 className="card-title">Currency mix</h2><span className="text-[12px] text-muted">share of volume</span></div>
-          <DonutChart slices={curSlices} base={base} totalLabel="Volume" emptyLabel={`No transactions · ${label}`} />
+          <DonutChart slices={curSlices} base={base} totalLabel="Volume" emptyLabel={`No transactions ${label}`} />
         </section>
       </div>
 
@@ -93,11 +96,11 @@ export function AnalyticsTab() {
 
       <section className="card">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-baseline gap-3"><h2 className="card-title">Monthly burn-rate pace</h2><span className="text-[12px] text-muted">{format(now, 'MMMM yyyy')} · cumulative spend</span></div>
+          <div className="flex items-baseline gap-3"><h2 className="card-title">Monthly burn-rate pace</h2><span className="text-[12px] text-muted">{fmt.monthYear(burnMonth)} · cumulative spend</span></div>
           <Legend items={cap ? [['Actual spend', 'bg-expense'], ['Ideal pace to cap (dashed)', 'bg-muted']] : [['Actual spend', 'bg-expense']]} />
         </div>
         {!cap && <p className="mb-2 text-[12px] text-muted">Set an overall monthly cap in Settings to see the ideal pace line.</p>}
-        <BurnRateChart data={burn} base={base} today={now.getDate()} />
+        <BurnRateChart data={burn} base={base} />
       </section>
     </div>
   );

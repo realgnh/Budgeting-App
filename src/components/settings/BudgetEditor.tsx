@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { fmt } from '../../lib/time';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useUi } from '../../store/useUi';
 import { limitToBase } from '../../lib/fx';
@@ -15,7 +15,7 @@ export function BudgetEditor() {
   const { budgetMonth, setBudgetMonth } = useUi();
   const exp = categories.filter((c) => c.type === 'expense');
   const { config, from } = resolveMonthBudget(budgetMonth, monthlyBudgets, budgets);
-  const monthName = format(monthFromKey(budgetMonth), 'MMMM yyyy');
+  const monthName = fmt.monthYear(monthFromKey(budgetMonth));
   const years = useMemo(() => yearRange(earliestTimestamp(transactions)), [transactions]);
   const show = (l: MoneyLimit | null | undefined, cur: Currency) => (l ? String(Math.round(limitToBase(l, cur, fx.rates) * 100) / 100) : '');
   const [overall, setOverall] = useState('');
@@ -51,7 +51,7 @@ export function BudgetEditor() {
         <MonthPicker idPrefix="editor" value={budgetMonth} onChange={setBudgetMonth} {...years} />
         <p className="text-[12.5px] text-fg-2">
           {ownBudget ? `${monthName} has its own budget.`
-            : from ? `${monthName} uses the budget set for ${format(monthFromKey(from), 'MMMM yyyy')}.`
+            : from ? `${monthName} uses the budget set for ${fmt.monthYear(monthFromKey(from))}.`
               : `${monthName} has no budget yet.`}
           {' '}Saving applies to {monthName} and later months, until a later month gets its own budget.
         </p>
@@ -69,7 +69,7 @@ export function BudgetEditor() {
           <button type="button" className="btn btn-ghost" onClick={clearFields}>Clear fields</button>
           {ownBudget && <button type="button" className="btn btn-ghost text-bad" onClick={() => { clearMonthBudget(budgetMonth); toast(`Removed the ${monthName} budget`); }}>Remove this month's budget</button>}
         </div>
-        <button type="button" className="btn btn-primary" onClick={save}>Save {format(monthFromKey(budgetMonth), 'MMMM')} budget</button>
+        <button type="button" className="btn btn-primary" onClick={save}>Save {fmt.month(monthFromKey(budgetMonth))} budget</button>
       </div>
     </section>
   );

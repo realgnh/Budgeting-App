@@ -2,7 +2,8 @@ export type Currency = 'EGP' | 'SAR' | 'USD';
 
 export type TransactionType = 'income' | 'expense';
 
-export type TimeRange = '1D' | '5D' | '1M' | '1Y' | 'ALL';
+/** How much time the dashboard shows at once: one day, one month or one year (UTC+2 calendar). */
+export type PeriodUnit = 'day' | 'month' | 'year';
 
 /** Exchange rates expressed as units of currency per 1 USD (USD is always 1). */
 export interface FxRates {
@@ -66,7 +67,7 @@ export type MonthKey = string;
 export interface AppState {
   schemaVersion: number;
   baseCurrency: Currency;
-  activeRange: TimeRange;
+  periodUnit: PeriodUnit;
   fx: FxCache;
   categories: Category[];
   transactions: Transaction[];
@@ -78,5 +79,5 @@ export interface AppState {
 }
 
 export const CURRENCIES: readonly Currency[] = ['EGP', 'SAR', 'USD'] as const;
-export const TIME_RANGES: readonly TimeRange[] = ['1D', '5D', '1M', '1Y', 'ALL'] as const;
-export const SCHEMA_VERSION = 2;
+export const PERIOD_UNITS: readonly PeriodUnit[] = ['day', 'month', 'year'] as const;
+export const SCHEMA_VERSION = 3;

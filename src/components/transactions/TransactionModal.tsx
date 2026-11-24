@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { TZ_LABEL, fromInputValue, toInputValue } from '../../lib/time';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useUi } from '../../store/useUi';
 import { Modal } from '../common/Overlay';
@@ -11,7 +11,6 @@ import { formatMoney, formatNumber } from '../../lib/format';
 import { CURRENCIES, type Currency, type TransactionType } from '../../types/finance';
 
 interface Draft { type: TransactionType; amount: string; currency: Currency; categoryId: string; title: string; notes: string; when: string }
-const toLocalInput = (d: Date) => format(d, "yyyy-MM-dd'T'HH:mm");
 
 export function TransactionModal() {
   const { open, editing } = useUi((s) => s.editor);
@@ -24,10 +23,10 @@ export function TransactionModal() {
     if (!open) return;
     setError(null);
     if (editing) {
-      setD({ type: editing.type, amount: String(editing.amount), currency: editing.currency, categoryId: editing.categoryId, title: editing.title, notes: editing.notes ?? '', when: toLocalInput(new Date(editing.timestampIso)) });
+      setD({ type: editing.type, amount: String(editing.amount), currency: editing.currency, categoryId: editing.categoryId, title: editing.title, notes: editing.notes ?? '', when: toInputValue(editing.timestampIso) });
     } else {
       const first = categories.find((c) => c.type === 'expense');
-      setD({ type: 'expense', amount: '', currency: base, categoryId: first?.id ?? '', title: '', notes: '', when: toLocalInput(new Date()) });
+      setD({ type: 'expense', amount: '', currency: base, categoryId: first?.id ?? '', title: '', notes: '', when: toInputValue(new Date()) });
     }
   }, [open, editing, categories, base]);
 
@@ -44,8 +43,8 @@ export function TransactionModal() {
     if (!(amt > 0)) return setError('Enter an amount greater than 0.');
     if (!d.categoryId || !selectedCat) return setError('Pick a category.');
     if (!d.title.trim()) return setError('Add a short title, such as the merchant or source.');
-    const when = new Date(d.when);
-    if (Number.isNaN(when.getTime())) return setError('Pick a valid date and time.');
+    const when = fromInputValue(d.when);
+    if (!when) return setError('Pick a valid date and time.');
     const payload = { type: d.type, amount: Math.round(amt * 100) / 100, currency: d.currency, categoryId: d.categoryId, title: d.title.trim(), ...(d.notes.trim() ? { notes: d.notes.trim() } : {}), timestampIso: when.toISOString() };
     if (editing) { updateTransaction(editing.id, payload); toast('Transaction updated'); }
     else { addTransaction(payload); toast(`${d.type === 'income' ? 'Income' : 'Expense'} added`); }
@@ -77,7 +76,7 @@ export function TransactionModal() {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="label-caps" htmlFor="tx-when">Date &amp; time</label>
+            <label className="label-caps" htmlFor="tx-when">Date &amp; time ({TZ_LABEL})</label>
             <input id="tx-when" type="datetime-local" className="input w-full" value={d.when} onChange={(e) => upd({ when: e.target.value })} />
           </div>
         </div>

@@ -2,8 +2,8 @@ import { Search, X } from 'lucide-react';
 import type { Category, Currency, TransactionType } from '../../types/finance';
 import { CURRENCIES } from '../../types/finance';
 
-export interface Filters { q: string; type: 'all' | TransactionType; cat: string; cur: 'all' | Currency; from: string; to: string }
-export const EMPTY_FILTERS: Filters = { q: '', type: 'all', cat: 'all', cur: 'all', from: '', to: '' };
+export interface Filters { q: string; type: 'all' | TransactionType; cat: string; cur: 'all' | Currency }
+export const EMPTY_FILTERS: Filters = { q: '', type: 'all', cat: 'all', cur: 'all' };
 
 export function FilterBar({ value, onChange, categories }: { value: Filters; onChange: (f: Filters) => void; categories: Category[] }) {
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => onChange({ ...value, [k]: v });
@@ -25,10 +25,6 @@ export function FilterBar({ value, onChange, categories }: { value: Filters; onC
       <select className="input" aria-label="Native currency" value={value.cur} onChange={(e) => set('cur', e.target.value as Filters['cur'])}>
         <option value="all">All currencies</option>{CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
-      <span className="label-caps ml-1">From</span>
-      <input type="date" className="input" aria-label="From date" value={value.from} max={value.to || undefined} onChange={(e) => set('from', e.target.value)} />
-      <span className="label-caps">To</span>
-      <input type="date" className="input" aria-label="To date" value={value.to} min={value.from || undefined} onChange={(e) => set('to', e.target.value)} />
       {dirty && <button type="button" className="btn btn-ghost anim-fade-up" onClick={() => onChange(EMPTY_FILTERS)}><X size={14} />Clear filters</button>}
     </div>
   );

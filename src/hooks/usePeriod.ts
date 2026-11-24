@@ -1,21 +1,28 @@
 import { useMemo } from 'react';
 import { useFinanceStore } from '../store/useFinanceStore';
-import { earliestTimestamp, getPreviousWindow, getWindow } from '../lib/timeframes';
+import { useUi } from '../store/useUi';
+import { getPreviousWindow, getWindow, isCurrentPeriod, type Period } from '../lib/timeframes';
 import { inWindow } from '../lib/analytics';
+import { parseDayKey } from '../lib/time';
 import { useNow } from './useNow';
 
-/** The active timeframe window, its transactions, and the comparison window. */
+/**
+ * The selected day / month / year, its transactions and the period before it. With no pinned date
+ * it follows the current time, so the "today" view starts fresh at 00:00 UTC+2.
+ */
 export function usePeriod() {
   const transactions = useFinanceStore((s) => s.transactions);
-  const range = useFinanceStore((s) => s.activeRange);
+  const unit = useFinanceStore((s) => s.periodUnit);
+  const anchorKey = useUi((s) => s.periodAnchor);
   const now = useNow();
   return useMemo(() => {
-    const window = getWindow(range, now, earliestTimestamp(transactions));
-    const prevWindow = getPreviousWindow(range, window);
+    const period: Period = { unit, anchor: anchorKey ? parseDayKey(anchorKey) : now };
+    const window = getWindow(period);
+    const prevWindow = getPreviousWindow(period);
     return {
-      now, range, window, prevWindow,
+      now, unit, period, window, prevWindow, isCurrent: isCurrentPeriod(period, now),
       current: inWindow(transactions, window),
-      previous: prevWindow ? inWindow(transactions, prevWindow) : [],
+      previous: inWindow(transactions, prevWindow),
     };
-  }, [transactions, range, now]);
+  }, [transactions, unit, anchorKey, now]);
 }
