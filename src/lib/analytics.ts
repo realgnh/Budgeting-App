@@ -1,0 +1,115 @@
+import { addDays, format } from 'date-fns';
+import type { Category, Currency, Transaction } from '../types/finance';
+import { transactionToBase } from './fx';
+import { bucketIndexFor, buildBuckets, isInWindow, type TimeWindow } from './timeframes';
+import { currentMonthBounds } from './budgets';
+
+export interface Totals { income: number; expense: number; net: number; count: number }
+
+export function sumTotals(transactions: Transaction[], base: Currency): Totals {
+  let income = 0, expense = 0;
+  for (const t of transactions) {
+    const v = transactionToBase(t, base);
+    if (t.type === 'income') income += v; else expense += v;
+  }
+  return { income, expense, net: income - expense, count: transactions.length };
+}
+
+export function inWindow(transactions: Transaction[], w: Pick<TimeWindow, 'start' | 'end'>): Transaction[] {
+  return transactions.filter((t) => isInWindow(t.timestampIso, w));
+}
+
+/** Percentage change; null when the previous period was zero but the current is not. */
+export function pctDelta(current: number, previous: number): number | null {
+  if (previous === 0) return current === 0 ? 0 : null;
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+export function savingsRate(income: number, expense: number): number | null {
+  if (income <= 0) return null;
+  return ((income - expense) / income) * 100;
+}
+
+export interface SeriesPoint { label: string; start: Date; income: number; expense: number; net: number; balance: number }
+
+/** Income/expense per bucket plus the running all-time balance at each bucket's end. */
+export function cashFlowSeries(transactions: Transaction[], w: TimeWindow, base: Currency): SeriesPoint[] {
+  const buckets = buildBuckets(w);
+  const pts: SeriesPoint[] = buckets.map((b) => ({ label: b.label, start: b.start, income: 0, expense: 0, net: 0, balance: 0 }));
+  let opening = 0;
+  for (const t of transactions) {
+    const v = transactionToBase(t, base) * (t.type === 'income' ? 1 : -1);
+    if (Date.parse(t.timestampIso) < w.start.getTime()) { opening += v; continue; }
+    const i = bucketIndexFor(t.timestampIso, buckets);
+    if (i < 0) continue;
+    if (v >= 0) pts[i].income += v; else pts[i].expense -= v;
+  }
+  let run = opening;
+  for (const p of pts) { p.net = p.income - p.expense; run += p.net; p.balance = run; }
+  return pts;
+}
+
+export interface Slice { key: string; name: string; color: string; value: number; share: number }
+
+export function breakdownByCategory(transactions: Transaction[], categories: Category[], base: Currency): Slice[] {
+  const byId = new Map(categories.map((c) => [c.id, c]));
+  const agg = new Map<string, number>();
+  for (const t of transactions) agg.set(t.categoryId, (agg.get(t.categoryId) ?? 0) + transactionToBase(t, base));
+  const total = [...agg.values()].reduce((s, v) => s + v, 0);
+  return [...agg.entries()]
+    .map(([key, value]) => {
+      const c = byId.get(key);
+      return { key, name: c?.name ?? 'Unknown', color: c?.color ?? '#8f9893', value, share: total ? value / total : 0 };
+    })
+    .sort((a, b) => b.value - a.value);
+}
+
+export const CURRENCY_COLORS: Record<Currency, string> = { EGP: '#2a78d6', SAR: '#eb6834', USD: '#1baf7a' };
+
+export function currencyMix(transactions: Transaction[], base: Currency): Slice[] {
+  const agg: Record<Currency, number> = { EGP: 0, SAR: 0, USD: 0 };
+  for (const t of transactions) agg[t.currency] += transactionToBase(t, base);
+  const total = agg.EGP + agg.SAR + agg.USD;
+  return (Object.keys(agg) as Currency[])
+    .filter((k) => agg[k] > 0)
+    .map((k) => ({ key: k, name: k, color: CURRENCY_COLORS[k], value: agg[k], share: total ? agg[k] / total : 0 }))
+    .sort((a, b) => b.value - a.value);
+}
+
+export interface BurnPoint { day: number; label: string; actual: number | null; ideal: number | null }
+
+export function burnRateSeries(transactions: Transaction[], base: Currency, now: Date, limitInBase: number | null): BurnPoint[] {
+  const { start, last } = currentMonthBounds(now);
+  const days = last.getDate();
+  const daily = new Array<number>(days).fill(0);
+  for (const t of transactions) {
+    if (t.type !== 'expense') continue;
+    const d = new Date(t.timestampIso);
+    if (d.getFullYear() !== start.getFullYear() || d.getMonth() !== start.getMonth()) continue;
+    daily[d.getDate() - 1] += transactionToBase(t, base);
+  }
+  let run = 0;
+  return daily.map((v, i) => {
+    run += v;
+    return {
+      day: i + 1,
+      label: format(addDays(start, i), 'MMM d'),
+      actual: i + 1 <= now.getDate() ? run : null,
+      ideal: limitInBase ? (limitInBase * (i + 1)) / days : null,
+    };
+  });
+}
+
+export interface Highlights { largest: Transaction | null; largestValue: number; topCategory: Slice | null; avgDaily: number; days: number }
+
+export function periodHighlights(expenses: Transaction[], categories: Category[], base: Currency, w: TimeWindow, now: Date): Highlights {
+  let largest: Transaction | null = null, largestValue = 0, total = 0;
+  for (const t of expenses) {
+    const v = transactionToBase(t, base);
+    total += v;
+    if (v > largestValue) { largest = t; largestValue = v; }
+  }
+  const endMs = Math.min(w.end.getTime(), now.getTime());
+  const days = Math.max(1, Math.ceil((endMs - w.start.getTime()) / 86_400_000));
+  return { largest, largestValue, topCategory: breakdownByCategory(expenses, categories, base)[0] ?? null, avgDaily: total / days, days };
+}
