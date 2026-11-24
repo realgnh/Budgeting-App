@@ -22,7 +22,7 @@ Mizan targets desktop viewports of 1024px and wider.
 
 ## Features
 
-- **Overview:** balance, period income and expenses with the change vs. the previous period, net cash flow and savings rate. Also a budget panel for any month (pick the month and year), a cash-flow chart, a spending donut and recent activity.
+- **Overview:** balance, period income and expenses with the change vs. the previous period, net cash flow and savings rate. Also a budget panel for any month (pick the month and year), a cash-flow chart, a donut that switches between expenses by category and income by source, and recent activity.
 - **Set balance:** type what you actually have and Mizan records the difference as a correction. Corrections change the balance but never count as income or spending, and you can remove them later.
 - **Monthly budgets:** each month can have its own cap and category limits. A saved budget carries forward to later months until one of them gets its own. Past months show the final result; the current month shows safe-to-spend per day.
 - **Analytics:**
